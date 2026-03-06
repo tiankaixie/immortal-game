@@ -1,0 +1,238 @@
+extends Node
+## PlayerData — Global Autoload Singleton
+##
+## Stores all persistent player data:
+## - Cultivation realm and stage
+## - Spiritual root type
+## - Stats
+## - Equipment inventory
+## - Spirit stones (currency)
+## - Unlocked techniques/skills
+##
+## This data persists between runs and is saved to disk.
+
+# ─── Cultivation Realms ────────────────────────────────────────
+## Enum values match GDD cultivation progression (9 realms)
+enum CultivationRealm {
+	QI_CONDENSATION,         # 练气期
+	FOUNDATION_ESTABLISHMENT, # 筑基期
+	CORE_FORMATION,          # 结丹期
+	NASCENT_SOUL,            # 元婴期
+	SOUL_TRANSFORMATION,     # 化神期
+	VOID_REFINEMENT,         # 炼虚期
+	BODY_INTEGRATION,        # 合体期
+	MAHAYANA,                # 大乘期
+	TRIBULATION_TRANSCENDENCE, # 渡劫期
+}
+
+## Sub-stages within each realm
+enum CultivationStage {
+	EARLY,   # 初期
+	MID,     # 中期
+	LATE,    # 后期
+	PEAK,    # 巅峰
+}
+
+# ─── Spiritual Roots (五行灵根) ────────────────────────────────
+enum SpiritualRoot {
+	METAL,     # 金 — Attack bonus, sharp/cutting techniques
+	WOOD,      # 木 — Healing bonus, growth/nature techniques
+	WATER,     # 水 — Defense bonus, ice/flow techniques
+	FIRE,      # 火 — AoE damage bonus, flame techniques
+	EARTH,     # 土 — HP/stamina bonus, shield/stone techniques
+	# Special roots (unlockable)
+	LIGHTNING, # 雷 — Speed + crit bonus
+	VOID,      # 空 — Spatial manipulation
+}
+
+# ─── Persistent Player Data ────────────────────────────────────
+var player_name: String = "修士"  # Default: "Cultivator"
+var spiritual_root: SpiritualRoot = SpiritualRoot.METAL
+
+# Cultivation
+var cultivation_realm: CultivationRealm = CultivationRealm.QI_CONDENSATION
+var cultivation_stage: CultivationStage = CultivationStage.EARLY
+var cultivation_xp: float = 0.0            # Progress toward next stage
+var cultivation_xp_required: float = 100.0  # XP needed for next stage
+
+# Base Stats (modified by cultivation realm, equipment, spiritual root)
+var base_hp: float = 100.0          # 气血
+var base_spiritual_power: float = 50.0  # 灵力
+var base_attack: float = 10.0       # 攻击
+var base_defense: float = 5.0       # 防御
+var base_speed: float = 1.0         # 身法
+var base_luck: float = 1.0          # 气运
+
+# Economy
+var spirit_stones: int = 0           # 灵石 (primary currency)
+var high_grade_stones: int = 0       # 上品灵石 (premium currency)
+
+# Equipment (slot_name → equipment_data dictionary)
+var equipped_items: Dictionary = {
+	"weapon": null,      # 法器/灵剑
+	"armor": null,       # 法袍
+	"accessory_1": null, # 灵佩
+	"accessory_2": null, # 灵戒
+	"talisman": null,    # 护身符
+}
+
+# Inventory
+var inventory: Array = []           # Array of equipment/item dictionaries
+var max_inventory_size: int = 50
+
+# Unlocked skills/techniques
+var unlocked_skills: Array[String] = []  # Skill IDs from the Library Pavilion
+var equipped_skills: Array[String] = []  # Currently equipped skill IDs (max = skill_slots)
+var skill_slots: int = 2                  # Increases with cultivation realm
+
+# ─── Signals ───────────────────────────────────────────────────
+signal cultivation_advanced(realm: CultivationRealm, stage: CultivationStage)
+signal cultivation_xp_gained(amount: float, total: float)
+signal spirit_stones_changed(new_total: int)
+signal equipment_changed(slot: String)
+signal inventory_changed()
+
+func _ready() -> void:
+	print("[PlayerData] Initialized — Realm: %s, Stage: %s" % [
+		CultivationRealm.keys()[cultivation_realm],
+		CultivationStage.keys()[cultivation_stage]
+	])
+
+# ─── Cultivation ───────────────────────────────────────────────
+func add_cultivation_xp(amount: float) -> void:
+	"""Add cultivation XP. Automatically triggers advancement if threshold met."""
+	cultivation_xp += amount
+	cultivation_xp_gained.emit(amount, cultivation_xp)
+	
+	while cultivation_xp >= cultivation_xp_required:
+		_advance_cultivation()
+
+func _advance_cultivation() -> void:
+	"""Advance to next cultivation stage or realm."""
+	cultivation_xp -= cultivation_xp_required
+	
+	if cultivation_stage < CultivationStage.PEAK:
+		# Advance to next stage within current realm
+		cultivation_stage = (cultivation_stage + 1) as CultivationStage
+	else:
+		# Advance to next realm (requires tribulation in full implementation)
+		if cultivation_realm < CultivationRealm.TRIBULATION_TRANSCENDENCE:
+			cultivation_realm = (cultivation_realm + 1) as CultivationRealm
+			cultivation_stage = CultivationStage.EARLY
+			_on_realm_breakthrough()
+	
+	# Scale XP requirement (each stage requires more)
+	cultivation_xp_required *= 1.5
+	cultivation_advanced.emit(cultivation_realm, cultivation_stage)
+
+func _on_realm_breakthrough() -> void:
+	"""Handle realm-up effects: stat boosts, new skill slots, etc."""
+	# TODO: Trigger tribulation challenge before actually advancing
+	# TODO: Apply realm-specific stat multipliers
+	
+	# Unlock additional skill slot at key realms
+	match cultivation_realm:
+		CultivationRealm.FOUNDATION_ESTABLISHMENT:
+			skill_slots = 3
+		CultivationRealm.NASCENT_SOUL:
+			skill_slots = 4
+		CultivationRealm.SOUL_TRANSFORMATION:
+			skill_slots = 5
+		CultivationRealm.BODY_INTEGRATION:
+			skill_slots = 6
+
+# ─── Computed Stats (base + equipment + realm bonuses) ─────────
+func get_total_hp() -> float:
+	"""Calculate total HP from base + equipment + realm modifier."""
+	var realm_multiplier := 1.0 + (cultivation_realm * 0.3)
+	var equip_bonus := _get_equipment_stat_bonus("hp")
+	return base_hp * realm_multiplier + equip_bonus
+
+func get_total_attack() -> float:
+	var realm_multiplier := 1.0 + (cultivation_realm * 0.2)
+	var equip_bonus := _get_equipment_stat_bonus("attack")
+	var root_bonus := 1.1 if spiritual_root == SpiritualRoot.METAL else 1.0
+	return base_attack * realm_multiplier * root_bonus + equip_bonus
+
+func get_total_defense() -> float:
+	var realm_multiplier := 1.0 + (cultivation_realm * 0.2)
+	var equip_bonus := _get_equipment_stat_bonus("defense")
+	var root_bonus := 1.1 if spiritual_root == SpiritualRoot.WATER else 1.0
+	return base_defense * realm_multiplier * root_bonus + equip_bonus
+
+func _get_equipment_stat_bonus(stat_name: String) -> float:
+	"""Sum a stat bonus across all equipped items."""
+	var total := 0.0
+	for slot in equipped_items:
+		var item = equipped_items[slot]
+		if item != null and item.has(stat_name):
+			total += item[stat_name]
+	return total
+
+# ─── Economy ───────────────────────────────────────────────────
+func add_spirit_stones(amount: int) -> void:
+	spirit_stones += amount
+	spirit_stones_changed.emit(spirit_stones)
+
+func spend_spirit_stones(amount: int) -> bool:
+	"""Attempt to spend spirit stones. Returns false if insufficient."""
+	if spirit_stones >= amount:
+		spirit_stones -= amount
+		spirit_stones_changed.emit(spirit_stones)
+		return true
+	return false
+
+# ─── Equipment ─────────────────────────────────────────────────
+func equip_item(slot: String, item: Dictionary) -> Dictionary:
+	"""Equip an item to a slot. Returns the previously equipped item (or empty dict)."""
+	if not equipped_items.has(slot):
+		push_error("[PlayerData] Invalid equipment slot: %s" % slot)
+		return {}
+	
+	var old_item = equipped_items[slot]
+	equipped_items[slot] = item
+	equipment_changed.emit(slot)
+	
+	return old_item if old_item != null else {}
+
+func unequip_item(slot: String) -> Dictionary:
+	"""Remove item from slot and return it."""
+	var old_item = equipped_items.get(slot)
+	equipped_items[slot] = null
+	equipment_changed.emit(slot)
+	return old_item if old_item != null else {}
+
+# ─── Serialization ─────────────────────────────────────────────
+func to_dict() -> Dictionary:
+	"""Serialize player data to dictionary for saving."""
+	return {
+		"player_name": player_name,
+		"spiritual_root": spiritual_root,
+		"cultivation_realm": cultivation_realm,
+		"cultivation_stage": cultivation_stage,
+		"cultivation_xp": cultivation_xp,
+		"cultivation_xp_required": cultivation_xp_required,
+		"spirit_stones": spirit_stones,
+		"high_grade_stones": high_grade_stones,
+		"equipped_items": equipped_items,
+		"inventory": inventory,
+		"unlocked_skills": unlocked_skills,
+		"equipped_skills": equipped_skills,
+		"skill_slots": skill_slots,
+	}
+
+func from_dict(data: Dictionary) -> void:
+	"""Deserialize player data from dictionary."""
+	player_name = data.get("player_name", "修士")
+	spiritual_root = data.get("spiritual_root", SpiritualRoot.METAL)
+	cultivation_realm = data.get("cultivation_realm", CultivationRealm.QI_CONDENSATION)
+	cultivation_stage = data.get("cultivation_stage", CultivationStage.EARLY)
+	cultivation_xp = data.get("cultivation_xp", 0.0)
+	cultivation_xp_required = data.get("cultivation_xp_required", 100.0)
+	spirit_stones = data.get("spirit_stones", 0)
+	high_grade_stones = data.get("high_grade_stones", 0)
+	equipped_items = data.get("equipped_items", equipped_items)
+	inventory = data.get("inventory", [])
+	unlocked_skills = data.get("unlocked_skills", [])
+	equipped_skills = data.get("equipped_skills", [])
+	skill_slots = data.get("skill_slots", 2)

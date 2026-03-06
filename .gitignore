@@ -1,0 +1,29 @@
+# Godot 4 .gitignore
+
+# Godot-specific ignores
+.godot/
+*.translation
+
+# Imported resources
+.import/
+
+# Export templates and builds
+export/
+build/
+*.exe
+*.x86_64
+*.pck
+*.apk
+*.aab
+*.ipa
+
+# OS-specific
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
