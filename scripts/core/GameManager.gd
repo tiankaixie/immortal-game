@@ -17,6 +17,9 @@ enum GameState {
 	LOADING,
 }
 
+# ─── Save Constants ───────────────────────────────────────────
+const SAVE_PATH: String = "user://savegame.json"
+
 # ─── Current State ─────────────────────────────────────────────
 var current_state: GameState = GameState.MAIN_MENU
 var previous_state: GameState = GameState.MAIN_MENU
@@ -34,11 +37,14 @@ signal state_changed(new_state: GameState, old_state: GameState)
 signal run_started(dungeon_id: String)
 signal run_ended(victory: bool)
 signal floor_advanced(new_floor: int)
+signal game_saved()
+signal game_loaded()
 
 func _ready() -> void:
-	# TODO: Initialize save system
-	# TODO: Load player data from disk
 	print("[GameManager] Initialized")
+	# Attempt to load save on startup
+	if has_save_file():
+		print("[GameManager] Save file detected at %s" % SAVE_PATH)
 
 # ─── State Management ──────────────────────────────────────────
 func change_state(new_state: GameState) -> void:
@@ -76,6 +82,9 @@ func end_run(victory: bool) -> void:
 	
 	change_state(GameState.SECT_HUB)
 	run_ended.emit(victory)
+	
+	# Auto-save after run ends
+	save_game()
 
 func advance_floor() -> void:
 	"""Move to the next dungeon floor."""
@@ -97,14 +106,94 @@ func _deferred_goto_scene(scene_path: String) -> void:
 	get_tree().current_scene = new_scene
 
 # ─── Save/Load ─────────────────────────────────────────────────
+func has_save_file() -> bool:
+	"""Check if a save file exists on disk."""
+	return FileAccess.file_exists(SAVE_PATH)
+
 func save_game() -> void:
-	"""Save persistent data to disk."""
-	# TODO: Serialize PlayerData to JSON
-	# TODO: Write to user://savegame.json
-	pass
+	"""Save persistent data to disk as JSON."""
+	var save_data: Dictionary = {
+		"version": 1,
+		"timestamp": Time.get_datetime_string_from_system(),
+		"player_data": PlayerData.to_dict(),
+		"run_state": {
+			"current_dungeon_id": current_dungeon_id,
+			"current_floor": current_floor,
+			"current_room": current_room,
+			"run_spirit_stones": run_spirit_stones,
+			"run_items": run_items,
+			"is_run_active": is_run_active,
+		},
+		"game_state": current_state,
+	}
+	
+	var json_string := JSON.stringify(save_data, "\t")
+	
+	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	if file == null:
+		var err := FileAccess.get_open_error()
+		push_error("[GameManager] Failed to open save file for writing: %s" % error_string(err))
+		return
+	
+	file.store_string(json_string)
+	file.close()
+	
+	game_saved.emit()
+	print("[GameManager] Game saved to %s" % SAVE_PATH)
 
 func load_game() -> bool:
-	"""Load persistent data from disk. Returns false if no save exists."""
-	# TODO: Read from user://savegame.json
-	# TODO: Deserialize into PlayerData
-	return false
+	"""Load persistent data from disk. Returns false if no save exists or on error."""
+	if not has_save_file():
+		print("[GameManager] No save file found at %s" % SAVE_PATH)
+		return false
+	
+	var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
+	if file == null:
+		var err := FileAccess.get_open_error()
+		push_error("[GameManager] Failed to open save file for reading: %s" % error_string(err))
+		return false
+	
+	var json_string := file.get_as_text()
+	file.close()
+	
+	if json_string.is_empty():
+		push_error("[GameManager] Save file is empty")
+		return false
+	
+	var json := JSON.new()
+	var parse_result := json.parse(json_string)
+	if parse_result != OK:
+		push_error("[GameManager] JSON parse error at line %d: %s" % [json.get_error_line(), json.get_error_message()])
+		return false
+	
+	var save_data: Dictionary = json.data
+	if not save_data is Dictionary:
+		push_error("[GameManager] Save data is not a valid dictionary")
+		return false
+	
+	# Restore player data
+	if save_data.has("player_data"):
+		PlayerData.from_dict(save_data["player_data"])
+	else:
+		push_warning("[GameManager] Save file missing player_data section")
+	
+	# Restore run state
+	if save_data.has("run_state"):
+		var run := save_data["run_state"] as Dictionary
+		current_dungeon_id = run.get("current_dungeon_id", "")
+		current_floor = run.get("current_floor", 0)
+		current_room = run.get("current_room", 0)
+		run_spirit_stones = run.get("run_spirit_stones", 0)
+		run_items = run.get("run_items", [])
+		is_run_active = run.get("is_run_active", false)
+	
+	# Restore game state
+	if save_data.has("game_state"):
+		current_state = save_data["game_state"] as GameState
+	
+	game_loaded.emit()
+	print("[GameManager] Game loaded from %s (saved: %s)" % [
+		SAVE_PATH,
+		save_data.get("timestamp", "unknown")
+	])
+	return true

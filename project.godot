@@ -10,7 +10,7 @@
 config/name="仙途 - Path of Immortality"
 config/description="A xianxia roguelite dungeon crawler"
 config/version="0.0.1"
-run/main_scene=""
+run/main_scene="res://scenes/Main.tscn"
 config/features=PackedStringArray("4.3", "Forward Plus")
 config/icon="res://icon.svg"
 
@@ -18,6 +18,10 @@ config/icon="res://icon.svg"
 
 GameManager="*res://scripts/core/GameManager.gd"
 PlayerData="*res://scripts/core/PlayerData.gd"
+SkillDatabase="*res://scripts/core/SkillDatabase.gd"
+CombatSystem="*res://scripts/combat/CombatSystem.gd"
+BuffSystem="*res://scripts/systems/BuffSystem.gd"
+LootTable="*res://scripts/systems/LootTable.gd"
 
 [display]
 
@@ -56,6 +60,10 @@ attack={
 toggle_auto_battle={
 "deadzone": 0.5,
 "events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":81,"physical_keycode":0,"key_label":0,"unicode":0,"location":0,"echo":false,"script":null)]
+}
+sprint={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":4194325,"physical_keycode":0,"key_label":0,"unicode":0,"location":0,"echo":false,"script":null)]
 }
 
 [rendering]

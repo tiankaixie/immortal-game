@@ -1,0 +1,98 @@
+[gd_scene load_steps=6 format=3 uid="uid://hud001"]
+
+[ext_resource type="Script" path="res://scripts/ui/HUD.gd" id="1_hud"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_hp_bg"]
+bg_color = Color(0.3, 0.05, 0.05, 0.8)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_hp_fill"]
+bg_color = Color(0.85, 0.12, 0.12, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_sp_bg"]
+bg_color = Color(0.05, 0.08, 0.3, 0.8)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_sp_fill"]
+bg_color = Color(0.15, 0.4, 0.9, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="HUD" type="CanvasLayer"]
+script = ExtResource("1_hud")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+anchors_preset = 0
+offset_right = 350.0
+offset_bottom = 160.0
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="RealmLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "练气期 · 初期"
+theme_override_font_sizes/font_size = 18
+
+[node name="HPBar" type="ProgressBar" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(300, 28)
+theme_override_styles/background = SubResource("StyleBox_hp_bg")
+theme_override_styles/fill = SubResource("StyleBox_hp_fill")
+max_value = 100.0
+value = 100.0
+show_percentage = false
+
+[node name="HPLabel" type="Label" parent="MarginContainer/VBoxContainer/HPBar"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "气血  100 / 100"
+horizontal_alignment = 1
+vertical_alignment = 1
+theme_override_font_sizes/font_size = 14
+
+[node name="SPBar" type="ProgressBar" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(300, 28)
+theme_override_styles/background = SubResource("StyleBox_sp_bg")
+theme_override_styles/fill = SubResource("StyleBox_sp_fill")
+max_value = 50.0
+value = 50.0
+show_percentage = false
+
+[node name="SPLabel" type="Label" parent="MarginContainer/VBoxContainer/SPBar"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "灵力  50 / 50"
+horizontal_alignment = 1
+vertical_alignment = 1
+theme_override_font_sizes/font_size = 14
+
+[node name="AutoBattleLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "⚔ 自动战斗: 开  [Q]"
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.3, 0.9, 0.3, 1)

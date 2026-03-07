@@ -57,11 +57,14 @@ var cultivation_xp_required: float = 100.0  # XP needed for next stage
 
 # Base Stats (modified by cultivation realm, equipment, spiritual root)
 var base_hp: float = 100.0          # 气血
-var base_spiritual_power: float = 50.0  # 灵力
+var base_spiritual_power: float = 50.0  # 灵力 (base max SP)
+var sp: float = 50.0                # 当前灵力 (current SP)
+var sp_max: float = 50.0            # 灵力上限 (max SP, computed from base + bonuses)
 var base_attack: float = 10.0       # 攻击
 var base_defense: float = 5.0       # 防御
 var base_speed: float = 1.0         # 身法
 var base_luck: float = 1.0          # 气运
+var in_combat: bool = false         # 是否在战斗中 (for SP regen)
 
 # Economy
 var spirit_stones: int = 0           # 灵石 (primary currency)
@@ -91,8 +94,10 @@ signal cultivation_xp_gained(amount: float, total: float)
 signal spirit_stones_changed(new_total: int)
 signal equipment_changed(slot: String)
 signal inventory_changed()
+signal sp_updated(current: float, maximum: float)
 
 func _ready() -> void:
+	_recalculate_sp_max()
 	print("[PlayerData] Initialized — Realm: %s, Stage: %s" % [
 		CultivationRealm.keys()[cultivation_realm],
 		CultivationStage.keys()[cultivation_stage]
@@ -141,6 +146,36 @@ func _on_realm_breakthrough() -> void:
 		CultivationRealm.BODY_INTEGRATION:
 			skill_slots = 6
 
+# ─── SP Management ─────────────────────────────────────────────
+func _recalculate_sp_max() -> void:
+	"""Recalculate max SP from base + realm bonuses."""
+	var realm_multiplier := 1.0 + (cultivation_realm * 0.25)
+	var equip_bonus := _get_equipment_stat_bonus("sp")
+	sp_max = base_spiritual_power * realm_multiplier + equip_bonus
+	sp = min(sp, sp_max)
+
+func spend_sp(amount: float) -> bool:
+	"""Attempt to spend SP. Returns false if insufficient."""
+	if sp >= amount:
+		sp -= amount
+		sp_updated.emit(sp, sp_max)
+		return true
+	return false
+
+func restore_sp(amount: float) -> void:
+	"""Restore SP up to max."""
+	sp = min(sp_max, sp + amount)
+	sp_updated.emit(sp, sp_max)
+
+func regenerate_sp(delta: float) -> void:
+	"""Regenerate SP passively when not in combat. 1 SP/sec."""
+	if not in_combat and sp < sp_max:
+		sp = min(sp_max, sp + 1.0 * delta)
+		sp_updated.emit(sp, sp_max)
+
+func _process(delta: float) -> void:
+	regenerate_sp(delta)
+
 # ─── Computed Stats (base + equipment + realm bonuses) ─────────
 func get_total_hp() -> float:
 	"""Calculate total HP from base + equipment + realm modifier."""
@@ -159,6 +194,12 @@ func get_total_defense() -> float:
 	var equip_bonus := _get_equipment_stat_bonus("defense")
 	var root_bonus := 1.1 if spiritual_root == SpiritualRoot.WATER else 1.0
 	return base_defense * realm_multiplier * root_bonus + equip_bonus
+
+func get_total_sp_max() -> float:
+	"""Calculate total max SP from base + equipment + realm modifier."""
+	var realm_multiplier := 1.0 + (cultivation_realm * 0.25)
+	var equip_bonus := _get_equipment_stat_bonus("sp")
+	return base_spiritual_power * realm_multiplier + equip_bonus
 
 func _get_equipment_stat_bonus(stat_name: String) -> float:
 	"""Sum a stat bonus across all equipped items."""
@@ -212,6 +253,8 @@ func to_dict() -> Dictionary:
 		"cultivation_stage": cultivation_stage,
 		"cultivation_xp": cultivation_xp,
 		"cultivation_xp_required": cultivation_xp_required,
+		"sp": sp,
+		"sp_max": sp_max,
 		"spirit_stones": spirit_stones,
 		"high_grade_stones": high_grade_stones,
 		"equipped_items": equipped_items,
@@ -229,6 +272,8 @@ func from_dict(data: Dictionary) -> void:
 	cultivation_stage = data.get("cultivation_stage", CultivationStage.EARLY)
 	cultivation_xp = data.get("cultivation_xp", 0.0)
 	cultivation_xp_required = data.get("cultivation_xp_required", 100.0)
+	sp = data.get("sp", base_spiritual_power)
+	sp_max = data.get("sp_max", base_spiritual_power)
 	spirit_stones = data.get("spirit_stones", 0)
 	high_grade_stones = data.get("high_grade_stones", 0)
 	equipped_items = data.get("equipped_items", equipped_items)
