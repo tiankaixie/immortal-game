@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://merchant001"]
+
+[ext_resource type="Script" path="res://scripts/npc/Merchant.gd" id="1_merchant"]
+
+[node name="Merchant" type="Area3D"]
+script = ExtResource("1_merchant")
+collision_layer = 4
+collision_mask = 1

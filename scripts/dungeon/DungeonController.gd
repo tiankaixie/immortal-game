@@ -10,12 +10,17 @@ extends Node
 
 const MAX_ROOMS: int = 5
 const ROOM_SCENE_PATH: String = "res://scenes/dungeon/TestRoom.tscn"
+const MERCHANT_SCENE_PATH: String = "res://scenes/npc/Merchant.tscn"
 const MAIN_MENU_PATH: String = "res://scenes/ui/MainMenu.tscn"
+
+# Shop room appears after room 2 or 3 (50% chance each)
+const SHOP_ROOM_CANDIDATES: Array[int] = [3]  # After room 2 (before room 3)
 
 # ─── State ─────────────────────────────────────────────────────
 var current_room_number: int = 1
 var room_node: Node3D = null
 var is_transitioning: bool = false
+var shop_room_number: int = -1  # Which room is a shop room (-1 = none)
 
 # Fade overlay
 var fade_overlay: ColorRect = null
@@ -29,6 +34,11 @@ signal room_number_changed(room: int, total: int)
 signal dungeon_completed()
 
 func _ready() -> void:
+	# Decide if this run has a shop room (50% chance)
+	if randf() < 0.5:
+		shop_room_number = SHOP_ROOM_CANDIDATES[randi() % SHOP_ROOM_CANDIDATES.size()]
+		print("[DungeonController] Shop room scheduled at room %d" % shop_room_number)
+
 	# Create persistent fade overlay (hidden by default)
 	_create_fade_overlay()
 	call_deferred("_connect_room_manager")
@@ -199,6 +209,10 @@ func _swap_room() -> void:
 	if rm and rm.has_signal("room_cleared"):
 		rm.room_cleared.connect(_on_room_cleared)
 
+	# Spawn merchant if this is a shop room
+	if current_room_number == shop_room_number:
+		_spawn_merchant_in_room()
+
 	room_number_changed.emit(current_room_number, MAX_ROOMS)
 	print("[DungeonController] Loaded room %d/%d" % [current_room_number, MAX_ROOMS])
 
@@ -272,6 +286,23 @@ func _on_return_to_menu() -> void:
 	"""End the run and go back to main menu."""
 	GameManager.end_run(true)
 	GameManager.goto_scene(MAIN_MENU_PATH)
+
+# ─── Merchant Spawning ────────────────────────────────────────
+func _spawn_merchant_in_room() -> void:
+	"""Place a merchant NPC in the current room."""
+	if room_node == null:
+		return
+
+	var merchant_scene := load(MERCHANT_SCENE_PATH)
+	if merchant_scene == null:
+		push_warning("[DungeonController] Merchant scene not found")
+		return
+
+	var merchant := merchant_scene.instantiate()
+	# Place merchant at a corner of the room, away from enemies
+	merchant.position = Vector3(7.0, 0.0, 7.0)
+	room_node.add_child(merchant)
+	print("[DungeonController] Merchant spawned in room %d" % current_room_number)
 
 # ─── Boon Selection ───────────────────────────────────────────
 func _show_boon_selection() -> void:
