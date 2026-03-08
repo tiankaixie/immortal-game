@@ -35,6 +35,9 @@ const STAGE_NAMES: Dictionary = {
 	3: "巅峰",  # PEAK
 }
 
+# Room display (created dynamically)
+var room_label: Label = null
+
 func _ready() -> void:
 	# Connect to CombatSystem auto-battle signal
 	CombatSystem.auto_battle_toggled.connect(_on_auto_battle_toggled)
@@ -45,6 +48,9 @@ func _ready() -> void:
 	# Initialize display
 	_update_auto_battle_display(CombatSystem.auto_battle_enabled)
 	_update_realm_display()
+
+	# Create room counter label
+	_create_room_label()
 
 	print("[HUD] Ready")
 
@@ -115,3 +121,24 @@ func show_room_cleared() -> void:
 	tween.tween_interval(3.0)
 	tween.tween_property(label, "modulate:a", 0.0, 1.0)
 	tween.tween_callback(label.queue_free)
+
+# ─── Room Counter Display ─────────────────────────────────────
+func _create_room_label() -> void:
+	"""Create a room counter in the top-right corner."""
+	room_label = Label.new()
+	room_label.text = "第 1/5 间"
+	room_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	room_label.add_theme_font_size_override("font_size", 20)
+	room_label.add_theme_color_override("font_color", Color(0.8, 0.7, 1.0))
+	room_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	room_label.anchor_left = 0.85
+	room_label.anchor_right = 0.98
+	room_label.anchor_top = 0.02
+	room_label.anchor_bottom = 0.06
+	room_label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	add_child(room_label)
+
+func update_room_display(room: int, total: int) -> void:
+	"""Update the room counter text."""
+	if room_label:
+		room_label.text = "第 %d/%d 间" % [room, total]

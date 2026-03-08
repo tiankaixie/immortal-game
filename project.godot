@@ -22,6 +22,7 @@ SkillDatabase="*res://scripts/core/SkillDatabase.gd"
 CombatSystem="*res://scripts/combat/CombatSystem.gd"
 BuffSystem="*res://scripts/systems/BuffSystem.gd"
 LootTable="*res://scripts/systems/LootTable.gd"
+BoonDatabase="*res://scripts/systems/BoonDatabase.gd"
 
 [display]
 

@@ -67,7 +67,12 @@ func _on_room_cleared() -> void:
 	print("   ✦ Room Cleared! 房间已清除！ ✦")
 	print("═══════════════════════════════════")
 	
-	# Show UI notification via HUD
+	# Only show fallback UI if DungeonController is not handling it
+	var main := get_tree().current_scene
+	if main and main.find_child("DungeonController", true, false):
+		return  # DungeonController will handle boon UI + next room prompt
+	
+	# Show UI notification via HUD (fallback)
 	_show_clear_message()
 
 func _show_clear_message() -> void:
