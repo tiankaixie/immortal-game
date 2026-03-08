@@ -90,6 +90,17 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("toggle_auto_battle"):
 		CombatSystem.toggle_auto_battle()
 
+	# Skill hotkeys [1]-[4]
+	if event is InputEventKey and event.pressed and not event.echo:
+		var hotkey_index := -1
+		match event.keycode:
+			KEY_1: hotkey_index = 0
+			KEY_2: hotkey_index = 1
+			KEY_3: hotkey_index = 2
+			KEY_4: hotkey_index = 3
+		if hotkey_index >= 0:
+			_use_skill_hotkey(hotkey_index)
+
 func _physics_process(delta: float) -> void:
 	_update_camera()
 	_update_dash_timers(delta)
@@ -212,6 +223,52 @@ func _on_sp_updated(current: float, maximum: float) -> void:
 	current_sp = current
 	max_sp = maximum
 	sp_changed.emit(current_sp, max_sp)
+
+# ─── Skill Hotkeys ─────────────────────────────────────────────
+func _use_skill_hotkey(index: int) -> void:
+	"""Activate a skill by hotkey index (0-3)."""
+	# Build the same list the HUD skill panel uses
+	var skills_to_use: Array[String] = []
+	for sid in PlayerData.equipped_skills:
+		skills_to_use.append(sid)
+	if skills_to_use.size() == 0:
+		for sid in PlayerData.unlocked_skills:
+			if skills_to_use.size() >= 4:
+				break
+			skills_to_use.append(sid)
+
+	if index >= skills_to_use.size():
+		return  # No skill in that slot
+
+	var skill_id: String = skills_to_use[index]
+
+	# Find target: use CombatSystem's current target, or find nearest enemy
+	var target: Node = CombatSystem.current_target
+	if target == null or not is_instance_valid(target):
+		target = _find_nearest_enemy()
+
+	if target == null:
+		print("[Player] No target for skill %s" % skill_id)
+		return
+
+	# Signal manual input to CombatSystem
+	CombatSystem.on_manual_input()
+	CombatSystem.execute_skill(skill_id, target)
+
+func _find_nearest_enemy() -> Node:
+	"""Find the nearest enemy in the 'enemies' group."""
+	var enemies := get_tree().get_nodes_in_group("enemies")
+	if enemies.is_empty():
+		return null
+	var nearest: Node = null
+	var nearest_dist := INF
+	for enemy in enemies:
+		if is_instance_valid(enemy) and enemy.has_method("take_damage"):
+			var dist: float = global_position.distance_to(enemy.global_position)
+			if dist < nearest_dist:
+				nearest_dist = dist
+				nearest = enemy
+	return nearest
 
 func _on_death() -> void:
 	died.emit()

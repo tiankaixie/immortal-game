@@ -95,6 +95,7 @@ signal spirit_stones_changed(new_total: int)
 signal equipment_changed(slot: String)
 signal inventory_changed()
 signal sp_updated(current: float, maximum: float)
+signal skill_learned(skill_id: String)
 
 func _ready() -> void:
 	_recalculate_sp_max()
@@ -242,6 +243,24 @@ func unequip_item(slot: String) -> Dictionary:
 	equipped_items[slot] = null
 	equipment_changed.emit(slot)
 	return old_item if old_item != null else {}
+
+# ─── Skill Management ──────────────────────────────────────────
+func learn_skill(skill_id: String) -> bool:
+	"""Unlock a new skill. Returns false if already unlocked or invalid."""
+	if skill_id in unlocked_skills:
+		print("[PlayerData] Skill already unlocked: %s" % skill_id)
+		return false
+	var skill := SkillDatabase.get_skill(skill_id)
+	if skill.is_empty():
+		push_warning("[PlayerData] Cannot learn unknown skill: %s" % skill_id)
+		return false
+	unlocked_skills.append(skill_id)
+	# Auto-equip if there's an open slot
+	if equipped_skills.size() < skill_slots and skill_id not in equipped_skills:
+		equipped_skills.append(skill_id)
+	skill_learned.emit(skill_id)
+	print("[PlayerData] Learned skill: %s (%s)" % [skill.get("name_zh", skill_id), skill_id])
+	return true
 
 # ─── Serialization ─────────────────────────────────────────────
 func to_dict() -> Dictionary:

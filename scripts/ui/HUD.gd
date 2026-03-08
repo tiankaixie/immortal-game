@@ -46,6 +46,10 @@ var skill_tiles: Array[PanelContainer] = []
 # Spirit stones display
 var stones_label: Label = null
 
+# Inventory UI
+var inventory_ui: CanvasLayer = null
+const InventoryUIScene = preload("res://scenes/ui/InventoryUI.tscn")
+
 func _ready() -> void:
 	# Connect to CombatSystem auto-battle signal
 	CombatSystem.auto_battle_toggled.connect(_on_auto_battle_toggled)
@@ -59,6 +63,7 @@ func _ready() -> void:
 
 	# Connect to PlayerData skill/stones changes
 	PlayerData.spirit_stones_changed.connect(_on_spirit_stones_changed)
+	PlayerData.skill_learned.connect(_on_skill_learned)
 
 	# Create room counter label
 	_create_room_label()
@@ -310,3 +315,26 @@ func _get_element_name(element: String) -> String:
 		"earth": return "土"
 		"lightning": return "雷"
 		_: return "无"
+
+func _on_skill_learned(_skill_id: String) -> void:
+	refresh_skill_panel()
+
+# ─── Inventory Toggle ─────────────────────────────────────────
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_TAB:
+			_toggle_inventory()
+			get_viewport().set_input_as_handled()
+
+func _toggle_inventory() -> void:
+	"""Open or close the inventory UI."""
+	if inventory_ui != null and is_instance_valid(inventory_ui):
+		# Already open — close it
+		if inventory_ui.has_method("_on_close"):
+			inventory_ui._on_close()
+		inventory_ui = null
+		return
+
+	inventory_ui = InventoryUIScene.instantiate()
+	inventory_ui.closed.connect(func(): inventory_ui = null)
+	get_tree().root.add_child(inventory_ui)
