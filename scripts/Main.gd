@@ -67,6 +67,8 @@ func _setup_dungeon_controller() -> void:
 		# Connect room number changes to HUD
 		if dungeon_controller.has_signal("room_number_changed"):
 			dungeon_controller.room_number_changed.connect(_on_room_number_changed)
+		if dungeon_controller.has_signal("room_type_changed"):
+			dungeon_controller.room_type_changed.connect(_on_room_type_changed)
 
 		print("[Main] DungeonController added")
 
@@ -74,6 +76,11 @@ func _on_room_number_changed(room: int, total: int) -> void:
 	"""Update HUD with current room number."""
 	if hud and hud.has_method("update_room_display"):
 		hud.update_room_display(room, total)
+
+func _on_room_type_changed(room_type: int, room_type_name: String) -> void:
+	"""Update HUD with current room type."""
+	if hud and hud.has_method("update_room_type_display"):
+		hud.update_room_type_display(room_type_name)
 
 func _setup_world_environment() -> void:
 	"""Create a mystical xianxia atmosphere with procedural sky and lighting."""

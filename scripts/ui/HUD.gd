@@ -38,6 +38,7 @@ const STAGE_NAMES: Dictionary = {
 
 # Room display (created dynamically)
 var room_label: Label = null
+var room_type_label: Label = null
 
 # Skill panel (created dynamically)
 var skill_panel_container: HBoxContainer = null
@@ -186,7 +187,22 @@ func show_room_cleared() -> void:
 
 # ─── Room Counter Display ─────────────────────────────────────
 func _create_room_label() -> void:
-	"""Create a room counter in the top-right corner."""
+	"""Create a room type label and room counter in the top-right corner."""
+	# Room type label (above counter)
+	room_type_label = Label.new()
+	room_type_label.text = "普通间"
+	room_type_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	room_type_label.add_theme_font_size_override("font_size", 16)
+	room_type_label.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
+	room_type_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	room_type_label.anchor_left = 0.85
+	room_type_label.anchor_right = 0.98
+	room_type_label.anchor_top = 0.015
+	room_type_label.anchor_bottom = 0.04
+	room_type_label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	add_child(room_type_label)
+
+	# Room counter (below type label)
 	room_label = Label.new()
 	room_label.text = "第 1/5 间"
 	room_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -195,8 +211,8 @@ func _create_room_label() -> void:
 	room_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	room_label.anchor_left = 0.85
 	room_label.anchor_right = 0.98
-	room_label.anchor_top = 0.02
-	room_label.anchor_bottom = 0.06
+	room_label.anchor_top = 0.04
+	room_label.anchor_bottom = 0.075
 	room_label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	add_child(room_label)
 
@@ -204,6 +220,21 @@ func update_room_display(room: int, total: int) -> void:
 	"""Update the room counter text."""
 	if room_label:
 		room_label.text = "第 %d/%d 间" % [room, total]
+
+func update_room_type_display(room_type_name: String) -> void:
+	"""Update the room type label text and color."""
+	if room_type_label:
+		room_type_label.text = "— %s —" % room_type_name
+		# Color coding
+		match room_type_name:
+			"精英间":
+				room_type_label.add_theme_color_override("font_color", Color(1.0, 0.5, 0.2))
+			"宝藏间":
+				room_type_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
+			"BOSS间":
+				room_type_label.add_theme_color_override("font_color", Color(0.9, 0.2, 0.2))
+			_:
+				room_type_label.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
 
 # ─── Spirit Stones Display ────────────────────────────────────
 func _create_stones_label() -> void:
@@ -216,8 +247,8 @@ func _create_stones_label() -> void:
 	stones_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	stones_label.anchor_left = 0.85
 	stones_label.anchor_right = 0.98
-	stones_label.anchor_top = 0.06
-	stones_label.anchor_bottom = 0.10
+	stones_label.anchor_top = 0.075
+	stones_label.anchor_bottom = 0.11
 	stones_label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	add_child(stones_label)
 

@@ -47,11 +47,35 @@ var hard_compositions: Array[Array] = [
 # Shop room appears after room 2 or 3 (50% chance each)
 const SHOP_ROOM_CANDIDATES: Array[int] = [3]  # After room 2 (before room 3)
 
+# ─── Room Types ────────────────────────────────────────────────
+enum RoomType {
+	NORMAL,    # 普通间
+	ELITE,     # 精英间
+	TREASURE,  # 宝藏间
+	BOSS,      # BOSS间
+}
+
+const ROOM_TYPE_NAMES: Dictionary = {
+	RoomType.NORMAL: "普通间",
+	RoomType.ELITE: "精英间",
+	RoomType.TREASURE: "宝藏间",
+	RoomType.BOSS: "BOSS间",
+}
+
+const ROOM_TYPE_COLORS: Dictionary = {
+	RoomType.NORMAL: Color(0.8, 0.8, 0.8),
+	RoomType.ELITE: Color(1.0, 0.5, 0.2),
+	RoomType.TREASURE: Color(1.0, 0.85, 0.2),
+	RoomType.BOSS: Color(0.9, 0.2, 0.2),
+}
+
 # ─── State ─────────────────────────────────────────────────────
 var current_room_number: int = 1
+var current_room_type: RoomType = RoomType.NORMAL
 var room_node: Node3D = null
 var is_transitioning: bool = false
 var shop_room_number: int = -1  # Which room is a shop room (-1 = none)
+var treasure_rooms: Array[int] = []  # Pre-determined treasure room numbers
 
 # Fade overlay
 var fade_overlay: ColorRect = null
@@ -62,6 +86,7 @@ var prompt_canvas: CanvasLayer = null
 
 # ─── Signals ───────────────────────────────────────────────────
 signal room_number_changed(room: int, total: int)
+signal room_type_changed(room_type: int, room_type_name: String)
 signal dungeon_completed()
 
 func _ready() -> void:
@@ -72,6 +97,13 @@ func _ready() -> void:
 	if randf() < 0.5:
 		shop_room_number = SHOP_ROOM_CANDIDATES[randi() % SHOP_ROOM_CANDIDATES.size()]
 		print("[DungeonController] Shop room scheduled at room %d" % shop_room_number)
+
+	# Pre-determine treasure rooms (20% chance for rooms 1, 2, 4; rooms 3 and 5 are fixed types)
+	for r in [1, 2, 4]:
+		if randf() < 0.2:
+			treasure_rooms.append(r)
+	if treasure_rooms.size() > 0:
+		print("[DungeonController] Treasure rooms: %s" % str(treasure_rooms))
 
 	# Create persistent fade overlay (hidden by default)
 	_create_fade_overlay()
@@ -102,9 +134,11 @@ func _connect_room_manager() -> void:
 		rm.room_cleared.connect(_on_room_cleared)
 		print("[DungeonController] Connected to RoomManager")
 
-	# Initialize room counter
+	# Initialize room counter and type
 	GameManager.current_room = current_room_number
+	current_room_type = _determine_room_type(current_room_number)
 	room_number_changed.emit(current_room_number, MAX_ROOMS)
+	room_type_changed.emit(current_room_type, ROOM_TYPE_NAMES.get(current_room_type, "普通间"))
 
 func _on_room_cleared() -> void:
 	"""Room cleared — show boon selection, then next-room prompt."""
@@ -266,8 +300,16 @@ func _swap_room() -> void:
 	if current_room_number == shop_room_number:
 		_spawn_merchant_in_room()
 
+	# Determine and emit room type
+	current_room_type = _determine_room_type(current_room_number)
 	room_number_changed.emit(current_room_number, MAX_ROOMS)
-	print("[DungeonController] Loaded room %d/%d" % [current_room_number, MAX_ROOMS])
+	room_type_changed.emit(current_room_type, ROOM_TYPE_NAMES.get(current_room_type, "普通间"))
+
+	# Spawn treasure chest in treasure rooms
+	if current_room_type == RoomType.TREASURE:
+		_spawn_treasure_chest()
+
+	print("[DungeonController] Loaded room %d/%d (%s)" % [current_room_number, MAX_ROOMS, ROOM_TYPE_NAMES.get(current_room_type, "普通间")])
 
 func _on_transition_complete() -> void:
 	is_transitioning = false
@@ -339,6 +381,78 @@ func _on_return_to_menu() -> void:
 	"""End the run and go back to main menu."""
 	GameManager.end_run(true)
 	GameManager.goto_scene(MAIN_MENU_PATH)
+
+# ─── Room Type Logic ──────────────────────────────────────────
+func _determine_room_type(room_num: int) -> RoomType:
+	"""Determine the type of a room based on its number."""
+	if room_num == 5:
+		return RoomType.BOSS
+	if room_num == 3:
+		return RoomType.ELITE
+	if room_num in treasure_rooms:
+		return RoomType.TREASURE
+	return RoomType.NORMAL
+
+func _spawn_treasure_chest() -> void:
+	"""Spawn a golden chest in the current room that grants a boon on interaction."""
+	if room_node == null:
+		return
+
+	# Create chest as a StaticBody3D with a capsule mesh
+	var chest := StaticBody3D.new()
+	chest.name = "TreasureChest"
+	chest.position = Vector3(0, 0.4, -3.0)
+
+	# Visual: gold capsule
+	var mesh_instance := MeshInstance3D.new()
+	var capsule := CapsuleMesh.new()
+	capsule.radius = 0.4
+	capsule.height = 0.8
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.85, 0.7, 0.15)
+	mat.emission_enabled = true
+	mat.emission = Color(1.0, 0.85, 0.2)
+	mat.emission_energy_multiplier = 0.5
+	mat.metallic = 0.8
+	mat.roughness = 0.3
+	capsule.material = mat
+	mesh_instance.mesh = capsule
+	# Lay it on its side to look more chest-like
+	mesh_instance.rotation_degrees = Vector3(0, 0, 90)
+	chest.add_child(mesh_instance)
+
+	# Collision shape
+	var collision := CollisionShape3D.new()
+	var shape := CapsuleShape3D.new()
+	shape.radius = 0.5
+	shape.height = 1.0
+	collision.shape = shape
+	chest.add_child(collision)
+
+	# Interaction area (Area3D) for player proximity detection
+	var area := Area3D.new()
+	area.name = "InteractArea"
+	var area_collision := CollisionShape3D.new()
+	var area_shape := SphereShape3D.new()
+	area_shape.radius = 2.0
+	area_collision.shape = area_shape
+	area.add_child(area_collision)
+	chest.add_child(area)
+
+	# Floating label
+	var label_3d := Label3D.new()
+	label_3d.text = "✦ 宝箱 ✦\n[按 F 开启]"
+	label_3d.font_size = 48
+	label_3d.position = Vector3(0, 1.2, 0)
+	label_3d.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	label_3d.modulate = Color(1.0, 0.85, 0.3)
+	chest.add_child(label_3d)
+
+	room_node.add_child(chest)
+
+	# Connect interaction via input
+	chest.set_meta("is_treasure_chest", true)
+	print("[DungeonController] Treasure chest spawned in room %d" % current_room_number)
 
 # ─── Enemy Spawning ───────────────────────────────────────────
 func _spawn_room_enemies() -> void:
@@ -444,6 +558,41 @@ func _show_boon_selection() -> void:
 func _on_boon_ui_closed(_boon_id: String) -> void:
 	"""Boon UI was closed after selection."""
 	_on_boon_selected()
+
+# ─── Treasure Chest Interaction ────────────────────────────────
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_F:
+			_try_open_chest()
+
+func _try_open_chest() -> void:
+	"""Check if player is near a treasure chest and open it."""
+	if room_node == null:
+		return
+
+	var chest := room_node.get_node_or_null("TreasureChest")
+	if chest == null or not is_instance_valid(chest):
+		return
+
+	# Check distance to player
+	var player: Node = null
+	var players := get_tree().get_nodes_in_group("player")
+	if players.size() > 0:
+		player = players[0]
+	if player == null:
+		return
+
+	var dist: float = player.global_position.distance_to(chest.global_position)
+	if dist > 2.5:
+		return  # Too far
+
+	# Open chest: grant a random boon
+	print("[DungeonController] Treasure chest opened!")
+	AudioManager.play_sfx("pickup")
+	chest.queue_free()
+
+	# Show boon selection
+	_show_boon_selection()
 
 # ─── Fade Overlay ─────────────────────────────────────────────
 func _create_fade_overlay() -> void:
