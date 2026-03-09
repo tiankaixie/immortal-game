@@ -1,0 +1,38 @@
+[gd_scene load_steps=5 format=3 uid="uid://swarmenemy001"]
+
+[ext_resource type="Script" path="res://scripts/enemies/SwarmEnemy.gd" id="1_swarm"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_swarm"]
+radius = 0.21
+height = 0.96
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_swarm"]
+radius = 0.21
+height = 0.96
+
+[sub_resource type="StandardMaterial3D" id="Material_swarm"]
+albedo_color = Color(0.9, 0.8, 0.1, 1)
+
+[node name="SwarmEnemy" type="CharacterBody3D"]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 0, 0, 0)
+script = ExtResource("1_swarm")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.48, 0)
+shape = SubResource("CapsuleShape3D_swarm")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.48, 0)
+mesh = SubResource("CapsuleMesh_swarm")
+surface_material_override/0 = SubResource("Material_swarm")
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+
+[node name="HPLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, 0)
+pixel_size = 0.01
+font_size = 28
+outline_size = 6
+text = "噬灵蜂
+20 / 20"
+billboard = 1

@@ -11,6 +11,11 @@ var dungeon_controller: Node = null
 const DamageNumberScene = preload("res://scenes/ui/DamageNumber.tscn")
 
 func _ready() -> void:
+	# Load saved settings (audio, display, gameplay)
+	var SettingsPanel := load("res://scripts/ui/SettingsPanel.gd")
+	if SettingsPanel and SettingsPanel.has_method("load_settings_on_startup"):
+		SettingsPanel.load_settings_on_startup()
+
 	# Set game state
 	GameManager.change_state(GameManager.GameState.DUNGEON_RUN)
 

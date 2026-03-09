@@ -1,0 +1,38 @@
+[gd_scene load_steps=5 format=3 uid="uid://tankenemy001"]
+
+[ext_resource type="Script" path="res://scripts/enemies/TankEnemy.gd" id="1_tank"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_tank"]
+radius = 0.455
+height = 2.08
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_tank"]
+radius = 0.455
+height = 2.08
+
+[sub_resource type="StandardMaterial3D" id="Material_tank"]
+albedo_color = Color(0.3, 0.28, 0.32, 1)
+
+[node name="TankEnemy" type="CharacterBody3D"]
+transform = Transform3D(1.3, 0, 0, 0, 1.3, 0, 0, 0, 1.3, 0, 0, 0)
+script = ExtResource("1_tank")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+shape = SubResource("CapsuleShape3D_tank")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+mesh = SubResource("CapsuleMesh_tank")
+surface_material_override/0 = SubResource("Material_tank")
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+
+[node name="HPLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
+pixel_size = 0.01
+font_size = 32
+outline_size = 8
+text = "玄铁石魔
+120 / 120"
+billboard = 1

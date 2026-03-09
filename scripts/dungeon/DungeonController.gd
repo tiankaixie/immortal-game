@@ -13,6 +13,37 @@ const ROOM_SCENE_PATH: String = "res://scenes/dungeon/TestRoom.tscn"
 const MERCHANT_SCENE_PATH: String = "res://scenes/npc/Merchant.tscn"
 const MAIN_MENU_PATH: String = "res://scenes/ui/MainMenu.tscn"
 
+# Enemy scene paths
+const ENEMY_SCENE_PATH: String = "res://scenes/enemies/Enemy.tscn"
+const RANGED_ENEMY_SCENE_PATH: String = "res://scenes/enemies/RangedEnemy.tscn"
+const TANK_ENEMY_SCENE_PATH: String = "res://scenes/enemies/TankEnemy.tscn"
+const SWARM_ENEMY_SCENE_PATH: String = "res://scenes/enemies/SwarmEnemy.tscn"
+
+# Preloaded enemy scenes
+var enemy_scenes: Dictionary = {}
+
+# Enemy compositions per difficulty tier
+# Each entry is an array of [scene_path, count] pairs
+var easy_compositions: Array[Array] = [
+	[[ENEMY_SCENE_PATH, 2]],
+	[[ENEMY_SCENE_PATH, 1], [SWARM_ENEMY_SCENE_PATH, 3]],
+	[[ENEMY_SCENE_PATH, 2], [RANGED_ENEMY_SCENE_PATH, 1]],
+]
+
+var medium_compositions: Array[Array] = [
+	[[ENEMY_SCENE_PATH, 2], [RANGED_ENEMY_SCENE_PATH, 1]],
+	[[TANK_ENEMY_SCENE_PATH, 1], [ENEMY_SCENE_PATH, 2]],
+	[[RANGED_ENEMY_SCENE_PATH, 2], [SWARM_ENEMY_SCENE_PATH, 3]],
+	[[ENEMY_SCENE_PATH, 1], [TANK_ENEMY_SCENE_PATH, 1], [SWARM_ENEMY_SCENE_PATH, 3]],
+]
+
+var hard_compositions: Array[Array] = [
+	[[TANK_ENEMY_SCENE_PATH, 1], [RANGED_ENEMY_SCENE_PATH, 2], [ENEMY_SCENE_PATH, 1]],
+	[[TANK_ENEMY_SCENE_PATH, 1], [SWARM_ENEMY_SCENE_PATH, 6]],
+	[[RANGED_ENEMY_SCENE_PATH, 2], [ENEMY_SCENE_PATH, 2], [SWARM_ENEMY_SCENE_PATH, 3]],
+	[[TANK_ENEMY_SCENE_PATH, 2], [RANGED_ENEMY_SCENE_PATH, 1]],
+]
+
 # Shop room appears after room 2 or 3 (50% chance each)
 const SHOP_ROOM_CANDIDATES: Array[int] = [3]  # After room 2 (before room 3)
 
@@ -34,6 +65,9 @@ signal room_number_changed(room: int, total: int)
 signal dungeon_completed()
 
 func _ready() -> void:
+	# Preload enemy scenes
+	_preload_enemy_scenes()
+
 	# Decide if this run has a shop room (50% chance)
 	if randf() < 0.5:
 		shop_room_number = SHOP_ROOM_CANDIDATES[randi() % SHOP_ROOM_CANDIDATES.size()]
@@ -42,6 +76,14 @@ func _ready() -> void:
 	# Create persistent fade overlay (hidden by default)
 	_create_fade_overlay()
 	call_deferred("_connect_room_manager")
+
+func _preload_enemy_scenes() -> void:
+	"""Preload all enemy scenes for quick instantiation."""
+	enemy_scenes[ENEMY_SCENE_PATH] = load(ENEMY_SCENE_PATH)
+	enemy_scenes[RANGED_ENEMY_SCENE_PATH] = load(RANGED_ENEMY_SCENE_PATH)
+	enemy_scenes[TANK_ENEMY_SCENE_PATH] = load(TANK_ENEMY_SCENE_PATH)
+	enemy_scenes[SWARM_ENEMY_SCENE_PATH] = load(SWARM_ENEMY_SCENE_PATH)
+	print("[DungeonController] Enemy scenes preloaded")
 
 func _connect_room_manager() -> void:
 	"""Find and connect to the RoomManager in the current room."""
@@ -182,6 +224,17 @@ func _swap_room() -> void:
 	room_node = packed.instantiate()
 	main.add_child(room_node)
 
+	# Remove default static enemies from TestRoom (Enemy1, Enemy2, etc.)
+	var static_enemies: Array[Node] = []
+	for child in room_node.get_children():
+		if child.has_method("take_damage") and child.name != "Player":
+			static_enemies.append(child)
+	for e in static_enemies:
+		e.queue_free()
+
+	# Spawn enemies based on room difficulty composition
+	_spawn_room_enemies()
+
 	# Re-wire player and enemies
 	var player := room_node.get_node_or_null("Player")
 	if player:
@@ -196,7 +249,7 @@ func _swap_room() -> void:
 		if hud and hud.has_method("connect_to_player"):
 			hud.connect_to_player(player)
 
-		# Register enemies with CombatSystem
+		# Register enemies with CombatSystem (re-gather after spawning)
 		var enemies: Array[Node] = []
 		for child in room_node.get_children():
 			if child.has_method("take_damage") and child != player:
@@ -286,6 +339,74 @@ func _on_return_to_menu() -> void:
 	"""End the run and go back to main menu."""
 	GameManager.end_run(true)
 	GameManager.goto_scene(MAIN_MENU_PATH)
+
+# ─── Enemy Spawning ───────────────────────────────────────────
+func _spawn_room_enemies() -> void:
+	"""Spawn enemies based on current room number difficulty."""
+	if room_node == null:
+		return
+
+	var composition: Array = _get_room_composition()
+	var spawn_index: int = 0
+
+	for entry in composition:
+		var scene_path: String = entry[0]
+		var count: int = entry[1]
+		var scene: PackedScene = enemy_scenes.get(scene_path) as PackedScene
+		if scene == null:
+			push_warning("[DungeonController] Failed to load enemy scene: %s" % scene_path)
+			continue
+
+		for i in range(count):
+			var enemy := scene.instantiate()
+			# Spread enemies around the room (avoid center where player spawns)
+			var pos := _get_spawn_position(spawn_index)
+			enemy.position = pos
+			room_node.add_child(enemy)
+			spawn_index += 1
+
+	print("[DungeonController] Spawned %d enemies for room %d" % [spawn_index, current_room_number])
+
+func _get_room_composition() -> Array:
+	"""Select an enemy composition based on room difficulty."""
+	# Rooms 1-2: easy, Room 3: medium, Rooms 4-5: hard
+	var pool: Array[Array]
+	if current_room_number <= 2:
+		pool = easy_compositions
+	elif current_room_number <= 3:
+		pool = medium_compositions
+	else:
+		pool = hard_compositions
+
+	return pool[randi() % pool.size()]
+
+func _get_spawn_position(index: int) -> Vector3:
+	"""Calculate a spawn position for an enemy, spread around the room."""
+	# Spawn in a circle/spread pattern away from center (player spawn)
+	var spawn_positions: Array[Vector3] = [
+		Vector3(5.0, 0.5, -5.0),
+		Vector3(-4.0, 0.5, -3.0),
+		Vector3(6.0, 0.5, 3.0),
+		Vector3(-5.0, 0.5, 5.0),
+		Vector3(3.0, 0.5, -7.0),
+		Vector3(-6.0, 0.5, -6.0),
+		Vector3(7.0, 0.5, 0.0),
+		Vector3(-3.0, 0.5, 7.0),
+		Vector3(0.0, 0.5, -8.0),
+		Vector3(-7.0, 0.5, 0.0),
+		Vector3(4.0, 0.5, 6.0),
+		Vector3(-2.0, 0.5, -6.0),
+	]
+
+	if index < spawn_positions.size():
+		return spawn_positions[index]
+	else:
+		# Fallback: random position in room bounds
+		return Vector3(
+			randf_range(-7.0, 7.0),
+			0.5,
+			randf_range(-7.0, 7.0)
+		)
 
 # ─── Merchant Spawning ────────────────────────────────────────
 func _spawn_merchant_in_room() -> void:

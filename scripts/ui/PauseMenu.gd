@@ -135,8 +135,20 @@ func resume() -> void:
 	print("[PauseMenu] Resumed — game unpaused")
 
 func _on_settings() -> void:
-	"""设置按钮（占位）。"""
-	print("[PauseMenu] Settings — TODO: implement settings panel")
+	"""打开设置面板。"""
+	var settings_scene := load("res://scenes/ui/SettingsPanel.tscn")
+	if settings_scene:
+		var settings_panel := settings_scene.instantiate()
+		add_child(settings_panel)
+		if settings_panel.has_signal("closed"):
+			settings_panel.closed.connect(_on_settings_closed)
+		print("[PauseMenu] Settings panel opened")
+	else:
+		push_warning("[PauseMenu] SettingsPanel.tscn not found")
+
+func _on_settings_closed() -> void:
+	"""设置面板关闭后的回调。"""
+	print("[PauseMenu] Settings panel closed")
 
 func _on_main_menu() -> void:
 	"""回到主菜单。"""
