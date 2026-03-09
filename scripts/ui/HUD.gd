@@ -43,12 +43,21 @@ var room_label: Label = null
 var skill_panel_container: HBoxContainer = null
 var skill_tiles: Array[PanelContainer] = []
 
+# Cooldown overlay tracking — parallel arrays indexed with skill_tiles
+var cooldown_overlays: Array[ColorRect] = []
+var cooldown_labels: Array[Label] = []
+var cooldown_skill_ids: Array[String] = []
+
 # Spirit stones display
 var stones_label: Label = null
 
 # Inventory UI
 var inventory_ui: CanvasLayer = null
 const InventoryUIScene = preload("res://scenes/ui/InventoryUI.tscn")
+
+# Pause Menu
+var pause_menu: CanvasLayer = null
+const PauseMenuScene = preload("res://scenes/ui/PauseMenu.tscn")
 
 func _ready() -> void:
 	# Connect to CombatSystem auto-battle signal
@@ -75,6 +84,37 @@ func _ready() -> void:
 	_create_stones_label()
 
 	print("[HUD] Ready")
+
+func _process(_delta: float) -> void:
+	_update_cooldown_overlays()
+
+func _update_cooldown_overlays() -> void:
+	"""Update cooldown overlay height and timer text each frame."""
+	for i in range(cooldown_skill_ids.size()):
+		var skill_id: String = cooldown_skill_ids[i]
+		var overlay: ColorRect = cooldown_overlays[i]
+		var label: Label = cooldown_labels[i]
+		var tile: PanelContainer = skill_tiles[i]
+
+		var remaining: float = CombatSystem.skill_cooldowns.get(skill_id, 0.0)
+		if remaining <= 0.0:
+			overlay.visible = false
+			label.visible = false
+			continue
+
+		# 获取技能总冷却时间
+		var skill_data: Dictionary = SkillDatabase.get_skill(skill_id)
+		var total_cd: float = skill_data.get("cooldown", 1.0)
+		var ratio: float = clampf(remaining / total_cd, 0.0, 1.0)
+
+		overlay.visible = true
+		label.visible = true
+		label.text = "%.1fs" % remaining
+
+		# 遮罩从顶部向下缩小：高度 = tile高度 * ratio
+		var tile_size: Vector2 = tile.size
+		overlay.size = Vector2(tile_size.x, tile_size.y * ratio)
+		overlay.position = Vector2.ZERO
 
 # ─── Player Connection ────────────────────────────────────────
 func connect_to_player(player: Node) -> void:
@@ -218,11 +258,14 @@ func refresh_skill_panel() -> void:
 	if skill_panel_container == null:
 		return
 
-	# Clear existing tiles
+	# Clear existing tiles and cooldown tracking
 	for tile in skill_tiles:
 		if is_instance_valid(tile):
 			tile.queue_free()
 	skill_tiles.clear()
+	cooldown_overlays.clear()
+	cooldown_labels.clear()
+	cooldown_skill_ids.clear()
 
 	# Build tiles for each equipped skill (up to 4)
 	var skills_to_show: Array[String] = []
@@ -246,6 +289,7 @@ func refresh_skill_panel() -> void:
 		var tile := _create_skill_tile(skill_data, hotkey_index)
 		skill_panel_container.add_child(tile)
 		skill_tiles.append(tile)
+		cooldown_skill_ids.append(skill_id)
 		hotkey_index += 1
 
 func _create_skill_tile(skill: Dictionary, hotkey: int) -> PanelContainer:
@@ -293,6 +337,25 @@ func _create_skill_tile(skill: Dictionary, hotkey: int) -> PanelContainer:
 	bottom.add_theme_color_override("font_color", Color(0.6, 0.65, 0.8))
 	vbox.add_child(bottom)
 
+	# ── 冷却遮罩 (cooldown overlay) ──
+	var cd_overlay := ColorRect.new()
+	cd_overlay.color = Color(0.0, 0.0, 0.0, 0.6)
+	cd_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cd_overlay.visible = false
+	panel.add_child(cd_overlay)
+	cooldown_overlays.append(cd_overlay)
+
+	var cd_label := Label.new()
+	cd_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cd_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	cd_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	cd_label.add_theme_font_size_override("font_size", 16)
+	cd_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.9))
+	cd_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cd_label.visible = false
+	panel.add_child(cd_label)
+	cooldown_labels.append(cd_label)
+
 	return panel
 
 func _get_element_color(element: String) -> Color:
@@ -325,6 +388,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.keycode == KEY_TAB:
 			_toggle_inventory()
 			get_viewport().set_input_as_handled()
+		elif event.keycode == KEY_ESCAPE:
+			_toggle_pause_menu()
+			get_viewport().set_input_as_handled()
 
 func _toggle_inventory() -> void:
 	"""Open or close the inventory UI."""
@@ -338,3 +404,16 @@ func _toggle_inventory() -> void:
 	inventory_ui = InventoryUIScene.instantiate()
 	inventory_ui.closed.connect(func(): inventory_ui = null)
 	get_tree().root.add_child(inventory_ui)
+
+# ─── Pause Menu Toggle ───────────────────────────────────────
+func _toggle_pause_menu() -> void:
+	"""Open or close the pause menu."""
+	if pause_menu != null and is_instance_valid(pause_menu):
+		if pause_menu.has_method("resume"):
+			pause_menu.resume()
+		pause_menu = null
+		return
+
+	pause_menu = PauseMenuScene.instantiate()
+	pause_menu.closed.connect(func(): pause_menu = null)
+	get_tree().root.add_child(pause_menu)

@@ -8,6 +8,7 @@ extends Node3D
 @onready var test_room: Node3D = $TestRoom
 
 var dungeon_controller: Node = null
+const DamageNumberScene = preload("res://scenes/ui/DamageNumber.tscn")
 
 func _ready() -> void:
 	# Set game state
@@ -36,6 +37,9 @@ func _ready() -> void:
 
 		if enemies.size() > 0:
 			CombatSystem.start_combat(player, enemies)
+
+	# 连接伤害信号，生成浮动伤害数字
+	CombatSystem.damage_dealt.connect(_on_damage_dealt)
 
 	print("[Main] Scene ready — %d enemies spawned" % test_room.get_children().filter(
 		func(c): return c.has_method("take_damage") and c.name != "Player"
@@ -126,3 +130,16 @@ func _setup_world_environment() -> void:
 	add_child(fill_light)
 
 	print("[Main] WorldEnvironment + lighting configured")
+
+# ─── Floating Damage Numbers ─────────────────────────────────
+func _on_damage_dealt(target: Node, amount: float, is_critical: bool) -> void:
+	"""Spawn a floating damage number at the target's position."""
+	if target == null or not is_instance_valid(target):
+		return
+
+	var dmg_num := DamageNumberScene.instantiate()
+	# 在目标头顶上方生成
+	var spawn_pos: Vector3 = target.global_position + Vector3(0, 1.8, 0)
+	add_child(dmg_num)
+	dmg_num.global_position = spawn_pos
+	dmg_num.setup(amount, is_critical)
