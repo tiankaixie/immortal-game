@@ -9,6 +9,10 @@ extends Node3D
 
 var dungeon_controller: Node = null
 const DamageNumberScene = preload("res://scenes/ui/DamageNumber.tscn")
+const SkillVFXScene = preload("res://scenes/vfx/SkillVFX.tscn")
+
+# Track last skill used for VFX element lookup
+var _last_skill_element: String = ""
 
 func _ready() -> void:
 	# Load saved settings (audio, display, gameplay)
@@ -43,8 +47,9 @@ func _ready() -> void:
 		if enemies.size() > 0:
 			CombatSystem.start_combat(player, enemies)
 
-	# 连接伤害信号，生成浮动伤害数字
+	# 连接伤害信号，生成浮动伤害数字 + VFX
 	CombatSystem.damage_dealt.connect(_on_damage_dealt)
+	CombatSystem.skill_used.connect(_on_skill_used_for_vfx)
 
 	print("[Main] Scene ready — %d enemies spawned" % test_room.get_children().filter(
 		func(c): return c.has_method("take_damage") and c.name != "Player"
@@ -136,9 +141,18 @@ func _setup_world_environment() -> void:
 
 	print("[Main] WorldEnvironment + lighting configured")
 
+# ─── Skill VFX Tracking ──────────────────────────────────────
+func _on_skill_used_for_vfx(skill_id: String) -> void:
+	"""Track last used skill element for VFX spawning."""
+	var skill := SkillDatabase.get_skill(skill_id)
+	if not skill.is_empty():
+		_last_skill_element = skill.get("element", "")
+	# Auto-clear after a short delay (so basic attacks don't inherit element)
+	get_tree().create_timer(0.5).timeout.connect(func(): _last_skill_element = "")
+
 # ─── Floating Damage Numbers ─────────────────────────────────
 func _on_damage_dealt(target: Node, amount: float, is_critical: bool) -> void:
-	"""Spawn a floating damage number at the target's position."""
+	"""Spawn a floating damage number and VFX at the target's position."""
 	if target == null or not is_instance_valid(target):
 		return
 
@@ -148,3 +162,14 @@ func _on_damage_dealt(target: Node, amount: float, is_critical: bool) -> void:
 	add_child(dmg_num)
 	dmg_num.global_position = spawn_pos
 	dmg_num.setup(amount, is_critical)
+
+	# Spawn skill VFX if a skill was recently used
+	if _last_skill_element != "":
+		_spawn_skill_vfx(target.global_position + Vector3(0, 1.0, 0), _last_skill_element)
+
+func _spawn_skill_vfx(pos: Vector3, element: String) -> void:
+	"""Instantiate a SkillVFX at the given position with the given element."""
+	var vfx := SkillVFXScene.instantiate()
+	vfx.element = element
+	add_child(vfx)
+	vfx.global_position = pos
