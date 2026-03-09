@@ -246,14 +246,20 @@ func _create_button(text: String) -> Button:
 func _on_master_volume_changed(value: float) -> void:
 	settings["master_volume"] = value
 	_apply_audio_volume(0, value)
+	if Engine.has_singleton("AudioManager") or has_node("/root/AudioManager"):
+		AudioManager.set_master_volume(value)
 
 func _on_sfx_volume_changed(value: float) -> void:
 	settings["sfx_volume"] = value
 	_apply_audio_volume(1, value)
+	if Engine.has_singleton("AudioManager") or has_node("/root/AudioManager"):
+		AudioManager.set_sfx_volume(value)
 
 func _on_music_volume_changed(value: float) -> void:
 	settings["music_volume"] = value
 	_apply_audio_volume(2, value)
+	if Engine.has_singleton("AudioManager") or has_node("/root/AudioManager"):
+		AudioManager.set_music_volume(value)
 
 func _on_fullscreen_toggled(pressed: bool) -> void:
 	settings["fullscreen"] = pressed

@@ -161,6 +161,7 @@ func _create_boon_card(boon: Dictionary, index: int) -> PanelContainer:
 
 func _on_boon_selected(boon_id: String) -> void:
 	"""Player selected a boon — apply it and close UI."""
+	AudioManager.play_sfx("level_up")
 	BoonDatabase.apply_boon(boon_id)
 
 	var boon := BoonDatabase.get_boon_by_id(boon_id)

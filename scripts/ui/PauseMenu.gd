@@ -14,6 +14,7 @@ func _ready() -> void:
 	layer = 20
 	_build_ui()
 	get_tree().paused = true
+	AudioManager.play_sfx("ui_open")
 	print("[PauseMenu] Opened — game paused")
 
 func _build_ui() -> void:

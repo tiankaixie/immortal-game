@@ -24,6 +24,7 @@ BuffSystem="*res://scripts/systems/BuffSystem.gd"
 LootTable="*res://scripts/systems/LootTable.gd"
 BoonDatabase="*res://scripts/systems/BoonDatabase.gd"
 TradeSystem="*res://scripts/systems/TradeSystem.gd"
+AudioManager="*res://scripts/core/AudioManager.gd"
 
 [display]
 

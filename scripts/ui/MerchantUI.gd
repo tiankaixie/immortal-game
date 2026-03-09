@@ -9,6 +9,10 @@ extends CanvasLayer
 signal closed()
 signal item_purchased(item_index: int)
 
+# ─── Tooltip ─────────────────────────────────────────────────
+const ItemTooltipScene := preload("res://scenes/ui/ItemTooltip.tscn")
+var _tooltip: PanelContainer = null
+
 # ─── State ────────────────────────────────────────────────────
 var stock: Array[Dictionary] = []
 var item_rows: Array[HBoxContainer] = []
@@ -175,7 +179,31 @@ func _create_item_row(item: Dictionary, index: int) -> HBoxContainer:
 	buy_btn.pressed.connect(_on_buy_pressed.bind(index))
 	row.add_child(buy_btn)
 
+	# Tooltip hover
+	row.mouse_entered.connect(_on_item_hover.bind(item))
+	row.mouse_exited.connect(_on_item_unhover)
+	row.mouse_filter = Control.MOUSE_FILTER_STOP
+
 	return row
+
+# ─── Tooltip ──────────────────────────────────────────────────
+func _on_item_hover(item: Dictionary) -> void:
+	"""Show tooltip for hovered item."""
+	_on_item_unhover()
+	_tooltip = ItemTooltipScene.instantiate()
+	add_child(_tooltip)
+	_tooltip.show_item(item)
+	_tooltip.update_position(get_viewport().get_mouse_position())
+
+func _on_item_unhover() -> void:
+	"""Hide the tooltip."""
+	if _tooltip != null and is_instance_valid(_tooltip):
+		_tooltip.queue_free()
+		_tooltip = null
+
+func _process(_delta: float) -> void:
+	if _tooltip != null and is_instance_valid(_tooltip):
+		_tooltip.update_position(get_viewport().get_mouse_position())
 
 func _on_buy_pressed(index: int) -> void:
 	"""Handle buying an item."""
@@ -200,6 +228,7 @@ func _on_buy_pressed(index: int) -> void:
 	# Refresh display
 	_refresh_after_purchase()
 
+	AudioManager.play_sfx("purchase")
 	print("[MerchantUI] Purchased: %s for %d stones" % [item.get("name", "?"), price])
 
 func _refresh_after_purchase() -> void:

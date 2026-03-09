@@ -185,7 +185,13 @@ func _perform_basic_attack(target: Node) -> void:
 			
 			damage_dealt.emit(target, damage_info["amount"], damage_info["is_critical"])
 			basic_attack_timer = BASIC_ATTACK_COOLDOWN
-			
+
+			# Audio feedback
+			if damage_info["is_critical"]:
+				AudioManager.play_sfx("crit")
+			else:
+				AudioManager.play_sfx("hit")
+
 			var crit_str := " (CRIT!)" if damage_info["is_critical"] else ""
 			print("[CombatSystem] Basic attack → %.1f damage%s" % [damage_info["amount"], crit_str])
 	else:

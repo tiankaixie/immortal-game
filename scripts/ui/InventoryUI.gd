@@ -31,6 +31,10 @@ const RARITY_NAMES: Dictionary = {
 	0: "凡品", 1: "灵品", 2: "宝品", 3: "地品", 4: "天品", 5: "仙品",
 }
 
+# ─── Tooltip ─────────────────────────────────────────────────
+const ItemTooltipScene := preload("res://scenes/ui/ItemTooltip.tscn")
+var _tooltip: PanelContainer = null
+
 # ─── State ────────────────────────────────────────────────────
 var inventory_vbox: VBoxContainer = null
 var equip_vbox: VBoxContainer = null
@@ -132,6 +136,8 @@ func _build_ui() -> void:
 	var tween := create_tween()
 	tween.tween_property(self, "modulate:a", 1.0, 0.25)
 
+	AudioManager.play_sfx("ui_open")
+
 func _create_section_panel(header_text: String) -> VBoxContainer:
 	"""Create a labeled section container."""
 	var vbox := VBoxContainer.new()
@@ -196,6 +202,12 @@ func _refresh_equipment() -> void:
 			empty_label.add_theme_color_override("font_color", Color(0.4, 0.4, 0.4))
 			row.add_child(empty_label)
 
+		# Tooltip hover for equipped items
+		if item != null and item is Dictionary and not item.is_empty():
+			row.mouse_entered.connect(_on_item_hover.bind(item))
+			row.mouse_exited.connect(_on_item_unhover)
+			row.mouse_filter = Control.MOUSE_FILTER_STOP
+
 		equip_vbox.add_child(row)
 
 func _refresh_inventory() -> void:
@@ -256,7 +268,32 @@ func _create_inventory_row(item: Dictionary, index: int) -> HBoxContainer:
 		equip_btn.pressed.connect(_on_equip.bind(index))
 		row.add_child(equip_btn)
 
+	# Tooltip hover
+	row.mouse_entered.connect(_on_item_hover.bind(item))
+	row.mouse_exited.connect(_on_item_unhover)
+	row.mouse_filter = Control.MOUSE_FILTER_STOP
+
 	return row
+
+# ─── Tooltip ──────────────────────────────────────────────────
+func _on_item_hover(item: Dictionary) -> void:
+	"""Show tooltip for hovered item."""
+	_on_item_unhover()
+	_tooltip = ItemTooltipScene.instantiate()
+	add_child(_tooltip)
+	_tooltip.show_item(item)
+	# Position will be updated in _process
+	_tooltip.update_position(get_viewport().get_mouse_position())
+
+func _on_item_unhover() -> void:
+	"""Hide the tooltip."""
+	if _tooltip != null and is_instance_valid(_tooltip):
+		_tooltip.queue_free()
+		_tooltip = null
+
+func _process(_delta: float) -> void:
+	if _tooltip != null and is_instance_valid(_tooltip):
+		_tooltip.update_position(get_viewport().get_mouse_position())
 
 # ─── Equip / Unequip ─────────────────────────────────────────
 func _on_equip(inventory_index: int) -> void:
@@ -278,6 +315,7 @@ func _on_equip(inventory_index: int) -> void:
 	PlayerData.equipped_items[slot] = item
 	PlayerData.equipment_changed.emit(slot)
 	PlayerData.inventory_changed.emit()
+	AudioManager.play_sfx("equip")
 	print("[InventoryUI] Equipped: %s → %s" % [item.get("name", "?"), slot])
 
 func _on_unequip(slot: String) -> void:
@@ -292,6 +330,7 @@ func _on_unequip(slot: String) -> void:
 	PlayerData.equipped_items[slot] = null
 	PlayerData.equipment_changed.emit(slot)
 	PlayerData.inventory_changed.emit()
+	AudioManager.play_sfx("unequip")
 	print("[InventoryUI] Unequipped: %s from %s" % [item.get("name", "?"), slot])
 
 # ─── Input ────────────────────────────────────────────────────
@@ -303,6 +342,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _on_close() -> void:
 	"""Close inventory with fade-out."""
+	AudioManager.play_sfx("ui_close")
 	var tween := create_tween()
 	tween.tween_property(self, "modulate:a", 0.0, 0.2)
 	tween.tween_callback(func():
