@@ -193,11 +193,13 @@ func _on_item_hover(item: Dictionary) -> void:
 	_tooltip = ItemTooltipScene.instantiate()
 	add_child(_tooltip)
 	_tooltip.show_item(item)
+	_tooltip.show_comparison(item)
 	_tooltip.update_position(get_viewport().get_mouse_position())
 
 func _on_item_unhover() -> void:
 	"""Hide the tooltip."""
 	if _tooltip != null and is_instance_valid(_tooltip):
+		_tooltip.hide_comparison()
 		_tooltip.queue_free()
 		_tooltip = null
 
