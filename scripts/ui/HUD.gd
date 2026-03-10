@@ -60,6 +60,10 @@ const InventoryUIScene = preload("res://scenes/ui/InventoryUI.tscn")
 var pause_menu: CanvasLayer = null
 const PauseMenuScene = preload("res://scenes/ui/PauseMenu.tscn")
 
+# Drop Notification
+var drop_notification: Control = null
+const DropNotificationScene = preload("res://scenes/ui/DropNotification.tscn")
+
 # ─── Boss HP Bar ──────────────────────────────────────────────
 var boss_bar_container: Control = null
 var boss_hp_bar: ProgressBar = null
@@ -92,6 +96,9 @@ func _ready() -> void:
 
 	# Create spirit stones display
 	_create_stones_label()
+
+	# Create drop notification overlay
+	_create_drop_notification()
 
 	print("[HUD] Ready")
 
@@ -264,6 +271,12 @@ func _create_stones_label() -> void:
 func _on_spirit_stones_changed(new_total: int) -> void:
 	if stones_label:
 		stones_label.text = "灵石: %d" % new_total
+
+# ─── Drop Notification ────────────────────────────────────────
+func _create_drop_notification() -> void:
+	"""Create the drop notification overlay."""
+	drop_notification = DropNotificationScene.instantiate()
+	add_child(drop_notification)
 
 # ─── Skill Panel ─────────────────────────────────────────────
 func _create_skill_panel() -> void:

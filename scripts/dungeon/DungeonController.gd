@@ -19,6 +19,8 @@ const ROOM_LAYOUTS: Array[String] = [
 	"res://scenes/dungeon/TestRoom.tscn",
 	"res://scenes/dungeon/NarrowRoom.tscn",
 	"res://scenes/dungeon/OpenRoom.tscn",
+	"res://scenes/dungeon/CrossRoom.tscn",
+	"res://scenes/dungeon/CircularRoom.tscn",
 ]
 
 # Enemy scene paths
@@ -27,6 +29,7 @@ const RANGED_ENEMY_SCENE_PATH: String = "res://scenes/enemies/RangedEnemy.tscn"
 const TANK_ENEMY_SCENE_PATH: String = "res://scenes/enemies/TankEnemy.tscn"
 const SWARM_ENEMY_SCENE_PATH: String = "res://scenes/enemies/SwarmEnemy.tscn"
 const BOSS_ENEMY_SCENE_PATH: String = "res://scenes/enemies/BossEnemy.tscn"
+const ELITE_ENEMY_SCENE_PATH: String = "res://scenes/enemies/EliteEnemy.tscn"
 
 # Preloaded enemy scenes
 var enemy_scenes: Dictionary = {}
@@ -125,6 +128,7 @@ func _preload_enemy_scenes() -> void:
 	enemy_scenes[TANK_ENEMY_SCENE_PATH] = load(TANK_ENEMY_SCENE_PATH)
 	enemy_scenes[SWARM_ENEMY_SCENE_PATH] = load(SWARM_ENEMY_SCENE_PATH)
 	enemy_scenes[BOSS_ENEMY_SCENE_PATH] = load(BOSS_ENEMY_SCENE_PATH)
+	enemy_scenes[ELITE_ENEMY_SCENE_PATH] = load(ELITE_ENEMY_SCENE_PATH)
 	print("[DungeonController] Enemy scenes preloaded")
 
 func _connect_room_manager() -> void:
@@ -277,6 +281,7 @@ func _swap_room() -> void:
 
 	# For boss rooms, keep the pre-placed Boss and connect signal
 	var is_boss_room := _determine_room_type(current_room_number) == RoomType.BOSS
+	var is_elite_room := _determine_room_type(current_room_number) == RoomType.ELITE
 	if is_boss_room:
 		# Connect boss_defeated signal for special handling
 		_connect_boss_signals()
@@ -289,8 +294,12 @@ func _swap_room() -> void:
 		for e in static_enemies:
 			e.queue_free()
 
-		# Spawn enemies based on room difficulty composition
-		_spawn_room_enemies()
+		if is_elite_room:
+			# Spawn the EliteEnemy (幽冥蛛后) for elite rooms
+			_spawn_elite_enemy()
+		else:
+			# Spawn enemies based on room difficulty composition
+			_spawn_room_enemies()
 
 	# Re-wire player and enemies
 	var player := room_node.get_node_or_null("Player")
@@ -541,6 +550,30 @@ func _show_boss_defeated_message() -> void:
 	tween.tween_interval(2.0)
 	tween.tween_property(canvas, "modulate:a", 0.0, 0.8)
 	tween.tween_callback(canvas.queue_free)
+
+# ─── Elite Enemy Spawning ──────────────────────────────────────
+func _spawn_elite_enemy() -> void:
+	"""Spawn the EliteEnemy (幽冥蛛后) in an elite room."""
+	if room_node == null:
+		return
+
+	var scene: PackedScene = enemy_scenes.get(ELITE_ENEMY_SCENE_PATH) as PackedScene
+	if scene == null:
+		push_warning("[DungeonController] Failed to load EliteEnemy scene")
+		return
+
+	var elite := scene.instantiate()
+	elite.position = Vector3(0.0, 0.5, -6.0)
+	room_node.add_child(elite)
+
+	# Register elite with HUD for boss-style HP bar
+	var main := get_parent()
+	if main:
+		var hud := main.find_child("HUD", true, false)
+		if hud and hud.has_method("register_boss"):
+			hud.register_boss(elite)
+
+	print("[DungeonController] EliteEnemy 幽冥蛛后 spawned in room %d" % current_room_number)
 
 # ─── Enemy Spawning ───────────────────────────────────────────
 func _spawn_room_enemies() -> void:

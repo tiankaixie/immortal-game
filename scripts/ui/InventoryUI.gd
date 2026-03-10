@@ -39,6 +39,10 @@ var _tooltip: PanelContainer = null
 var inventory_vbox: VBoxContainer = null
 var equip_vbox: VBoxContainer = null
 
+# Track items the player has already "seen" in inventory UI
+# Items not yet seen get a gold border flash
+static var seen_inventory_items: Dictionary = {}
+
 func _ready() -> void:
 	_build_ui()
 	PlayerData.inventory_changed.connect(_refresh)
@@ -273,7 +277,39 @@ func _create_inventory_row(item: Dictionary, index: int) -> HBoxContainer:
 	row.mouse_exited.connect(_on_item_unhover)
 	row.mouse_filter = Control.MOUSE_FILTER_STOP
 
+	# New item highlight: gold border flash for items not yet seen
+	var item_id: String = item.get("name", "") + str(item.get("rarity", 0))
+	if not seen_inventory_items.has(item_id):
+		seen_inventory_items[item_id] = true
+		_flash_new_item_border(row)
+
 	return row
+
+func _flash_new_item_border(row: HBoxContainer) -> void:
+	"""Flash a gold border on a newly seen inventory item row."""
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0, 0, 0, 0)
+	style.border_color = Color(1.0, 0.85, 0.2, 1.0)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(3)
+
+	# Wrap row content in a panel for the border effect
+	var highlight := PanelContainer.new()
+	highlight.add_theme_stylebox_override("panel", style)
+	row.add_child(highlight)
+	row.move_child(highlight, 0)
+	highlight.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	highlight.custom_minimum_size = Vector2(4, 0)
+
+	# Animate: flash border then fade
+	var tween := row.create_tween()
+	tween.tween_property(style, "border_color:a", 0.3, 0.4)
+	tween.tween_property(style, "border_color:a", 1.0, 0.4)
+	tween.tween_property(style, "border_color:a", 0.0, 0.6)
+	tween.tween_callback(func():
+		if is_instance_valid(highlight):
+			highlight.queue_free()
+	)
 
 # ─── Tooltip ──────────────────────────────────────────────────
 func _on_item_hover(item: Dictionary) -> void:

@@ -1,0 +1,96 @@
+[gd_scene load_steps=12 format=3 uid="uid://crossroom001"]
+
+[ext_resource type="PackedScene" uid="uid://player001" path="res://scenes/player/Player.tscn" id="1_player"]
+[ext_resource type="Script" path="res://scripts/dungeon/RoomManager.gd" id="3_roommanager"]
+
+[sub_resource type="StandardMaterial3D" id="Material_floor"]
+albedo_color = Color(0.28, 0.26, 0.24, 1)
+
+[sub_resource type="StandardMaterial3D" id="Material_wall"]
+albedo_color = Color(0.45, 0.4, 0.35, 1)
+
+[sub_resource type="StandardMaterial3D" id="Material_alcove_floor"]
+albedo_color = Color(0.35, 0.3, 0.25, 1)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_corridor_ns"]
+size = Vector2(8, 25)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_corridor_ew"]
+size = Vector2(25, 8)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_alcove"]
+size = Vector2(5, 5)
+
+[sub_resource type="BoxShape3D" id="BoxShape_floor_ns"]
+size = Vector3(8, 0.1, 25)
+
+[sub_resource type="BoxShape3D" id="BoxShape_floor_ew"]
+size = Vector3(25, 0.1, 8)
+
+[sub_resource type="NavigationMesh" id="NavigationMesh_cross"]
+vertices = PackedVector3Array(-4, 0, -12, -4, 0, -4, -12, 0, -4, -12, 0, 4, -4, 0, 4, -4, 0, 12, 4, 0, 12, 4, 0, 4, 12, 0, 4, 12, 0, -4, 4, 0, -4, 4, 0, -12)
+polygons = [PackedInt32Array(0, 1, 10, 11), PackedInt32Array(1, 4, 7, 10), PackedInt32Array(2, 3, 4, 1), PackedInt32Array(4, 5, 6, 7), PackedInt32Array(7, 8, 9, 10)]
+
+[node name="TestRoom" type="Node3D"]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 10, 0)
+light_energy = 0.8
+shadow_enabled = true
+
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="."]
+navigation_mesh = SubResource("NavigationMesh_cross")
+
+[node name="FloorNS" type="StaticBody3D" parent="NavigationRegion3D"]
+
+[node name="FloorNSMesh" type="MeshInstance3D" parent="NavigationRegion3D/FloorNS"]
+mesh = SubResource("PlaneMesh_corridor_ns")
+surface_material_override/0 = SubResource("Material_floor")
+
+[node name="FloorNSCollision" type="CollisionShape3D" parent="NavigationRegion3D/FloorNS"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0)
+shape = SubResource("BoxShape_floor_ns")
+
+[node name="FloorEW" type="StaticBody3D" parent="NavigationRegion3D"]
+
+[node name="FloorEWMesh" type="MeshInstance3D" parent="NavigationRegion3D/FloorEW"]
+mesh = SubResource("PlaneMesh_corridor_ew")
+surface_material_override/0 = SubResource("Material_floor")
+
+[node name="FloorEWCollision" type="CollisionShape3D" parent="NavigationRegion3D/FloorEW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0)
+shape = SubResource("BoxShape_floor_ew")
+
+[node name="AlcoveNE" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, 0, -8.5)
+
+[node name="AlcoveNEMesh" type="MeshInstance3D" parent="NavigationRegion3D/AlcoveNE"]
+mesh = SubResource("PlaneMesh_alcove")
+surface_material_override/0 = SubResource("Material_alcove_floor")
+
+[node name="AlcoveNW" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 0, -8.5)
+
+[node name="AlcoveNWMesh" type="MeshInstance3D" parent="NavigationRegion3D/AlcoveNW"]
+mesh = SubResource("PlaneMesh_alcove")
+surface_material_override/0 = SubResource("Material_alcove_floor")
+
+[node name="AlcoveSE" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, 0, 8.5)
+
+[node name="AlcoveSEMesh" type="MeshInstance3D" parent="NavigationRegion3D/AlcoveSE"]
+mesh = SubResource("PlaneMesh_alcove")
+surface_material_override/0 = SubResource("Material_alcove_floor")
+
+[node name="AlcoveSW" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 0, 8.5)
+
+[node name="AlcoveSWMesh" type="MeshInstance3D" parent="NavigationRegion3D/AlcoveSW"]
+mesh = SubResource("PlaneMesh_alcove")
+surface_material_override/0 = SubResource("Material_alcove_floor")
+
+[node name="RoomManager" type="Node" parent="."]
+script = ExtResource("3_roommanager")
+
+[node name="Player" parent="." instance=ExtResource("1_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
