@@ -479,13 +479,22 @@ func _spawn_treasure_chest() -> void:
 
 # ─── Boss Room Handling ────────────────────────────────────────
 func _connect_boss_signals() -> void:
-	"""Find the BossEnemy in the room and connect its boss_defeated signal."""
+	"""Find the BossEnemy in the room and connect its boss_defeated signal + HUD registration."""
 	if room_node == null:
 		return
 
 	for child in room_node.get_children():
 		if child.has_signal("boss_defeated"):
 			child.boss_defeated.connect(_on_boss_defeated)
+
+			# Register boss with HUD for boss HP bar display
+			var main := get_parent()
+			if main:
+				var hud := main.find_child("HUD", true, false)
+				if hud and hud.has_method("register_boss"):
+					hud.register_boss(child)
+					print("[DungeonController] Boss registered with HUD")
+
 			print("[DungeonController] Connected to BossEnemy boss_defeated signal")
 			return
 

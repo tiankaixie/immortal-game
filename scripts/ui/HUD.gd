@@ -60,6 +60,15 @@ const InventoryUIScene = preload("res://scenes/ui/InventoryUI.tscn")
 var pause_menu: CanvasLayer = null
 const PauseMenuScene = preload("res://scenes/ui/PauseMenu.tscn")
 
+# ─── Boss HP Bar ──────────────────────────────────────────────
+var boss_bar_container: Control = null
+var boss_hp_bar: ProgressBar = null
+var boss_hp_label: Label = null
+var boss_name_label: Label = null
+var boss_phase_label: Label = null
+var boss_node: Node = null
+var boss_hp_tween: Tween = null
+
 func _ready() -> void:
 	# Connect to CombatSystem auto-battle signal
 	CombatSystem.auto_battle_toggled.connect(_on_auto_battle_toggled)
@@ -435,6 +444,173 @@ func _toggle_inventory() -> void:
 	inventory_ui = InventoryUIScene.instantiate()
 	inventory_ui.closed.connect(func(): inventory_ui = null)
 	get_tree().root.add_child(inventory_ui)
+
+# ─── Boss HP Bar ──────────────────────────────────────────────
+func register_boss(boss: Node) -> void:
+	"""Register a boss enemy and show the boss HP bar at top-center."""
+	boss_node = boss
+	_create_boss_hp_bar()
+
+	# Connect boss signals
+	if boss.has_signal("hp_changed"):
+		boss.hp_changed.connect(_on_boss_hp_changed)
+	if boss.has_signal("boss_defeated"):
+		boss.boss_defeated.connect(_on_boss_defeated)
+	if boss.has_signal("phase_changed"):
+		boss.phase_changed.connect(_on_boss_phase_changed)
+
+	# Initialize with current values
+	if boss.get("max_hp") != null:
+		_on_boss_hp_changed(boss.current_hp, boss.max_hp)
+
+	boss_bar_container.visible = true
+	boss_bar_container.modulate = Color(1, 1, 1, 0)
+	var tween := create_tween()
+	tween.tween_property(boss_bar_container, "modulate:a", 1.0, 0.5)
+	print("[HUD] Boss HP bar registered: %s" % boss.get("enemy_name", "Boss"))
+
+func _create_boss_hp_bar() -> void:
+	"""Build the boss HP bar UI at top-center of screen."""
+	if boss_bar_container != null and is_instance_valid(boss_bar_container):
+		boss_bar_container.queue_free()
+
+	boss_bar_container = Control.new()
+	boss_bar_container.name = "BossHPBar"
+	boss_bar_container.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	boss_bar_container.anchor_left = 0.5
+	boss_bar_container.anchor_right = 0.5
+	boss_bar_container.anchor_top = 0.0
+	boss_bar_container.anchor_bottom = 0.0
+	boss_bar_container.offset_left = -300
+	boss_bar_container.offset_right = 300
+	boss_bar_container.offset_top = 15
+	boss_bar_container.offset_bottom = 90
+	boss_bar_container.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	boss_bar_container.visible = false
+	add_child(boss_bar_container)
+
+	# Boss name label
+	boss_name_label = Label.new()
+	boss_name_label.text = "苍龙天魔"
+	boss_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	boss_name_label.add_theme_font_size_override("font_size", 22)
+	boss_name_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
+	boss_name_label.position = Vector2(0, 0)
+	boss_name_label.size = Vector2(600, 28)
+	boss_bar_container.add_child(boss_name_label)
+
+	# Phase label (hidden initially)
+	boss_phase_label = Label.new()
+	boss_phase_label.text = ""
+	boss_phase_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	boss_phase_label.add_theme_font_size_override("font_size", 16)
+	boss_phase_label.add_theme_color_override("font_color", Color(1.0, 0.3, 0.2))
+	boss_phase_label.position = Vector2(0, 26)
+	boss_phase_label.size = Vector2(600, 22)
+	boss_phase_label.visible = false
+	boss_bar_container.add_child(boss_phase_label)
+
+	# HP bar background (dark)
+	var bar_bg := ColorRect.new()
+	bar_bg.color = Color(0.1, 0.08, 0.05, 0.8)
+	bar_bg.position = Vector2(0, 48)
+	bar_bg.size = Vector2(600, 22)
+	boss_bar_container.add_child(bar_bg)
+
+	# HP ProgressBar
+	boss_hp_bar = ProgressBar.new()
+	boss_hp_bar.position = Vector2(0, 48)
+	boss_hp_bar.size = Vector2(600, 22)
+	boss_hp_bar.max_value = 100.0
+	boss_hp_bar.value = 100.0
+	boss_hp_bar.show_percentage = false
+
+	# Style: gold bar
+	var fill_style := StyleBoxFlat.new()
+	fill_style.bg_color = Color(0.9, 0.75, 0.15)
+	fill_style.set_corner_radius_all(3)
+	boss_hp_bar.add_theme_stylebox_override("fill", fill_style)
+
+	var bg_style := StyleBoxFlat.new()
+	bg_style.bg_color = Color(0.15, 0.1, 0.05, 0.9)
+	bg_style.set_corner_radius_all(3)
+	bg_style.border_color = Color(0.6, 0.5, 0.2, 0.6)
+	bg_style.set_border_width_all(1)
+	boss_hp_bar.add_theme_stylebox_override("background", bg_style)
+
+	boss_bar_container.add_child(boss_hp_bar)
+
+	# HP text label (overlaid on bar)
+	boss_hp_label = Label.new()
+	boss_hp_label.text = ""
+	boss_hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	boss_hp_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	boss_hp_label.position = Vector2(0, 48)
+	boss_hp_label.size = Vector2(600, 22)
+	boss_hp_label.add_theme_font_size_override("font_size", 14)
+	boss_hp_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0))
+	boss_bar_container.add_child(boss_hp_label)
+
+func _on_boss_hp_changed(current: float, maximum: float) -> void:
+	"""Update boss HP bar with smooth tween animation."""
+	if boss_hp_bar == null:
+		return
+
+	boss_hp_bar.max_value = maximum
+	boss_hp_label.text = "%.0f / %.0f" % [current, maximum]
+
+	# Smooth tween for HP decrease
+	if boss_hp_tween and boss_hp_tween.is_valid():
+		boss_hp_tween.kill()
+	boss_hp_tween = create_tween()
+	boss_hp_tween.tween_property(boss_hp_bar, "value", current, 0.4).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+
+	# Color transition: gold → orange → red as HP drops
+	var hp_pct := current / maximum if maximum > 0.0 else 0.0
+	var bar_color: Color
+	if hp_pct > 0.6:
+		bar_color = Color(0.9, 0.75, 0.15)  # Gold
+	elif hp_pct > 0.3:
+		bar_color = Color(0.9, 0.45, 0.1).lerp(Color(0.9, 0.75, 0.15), (hp_pct - 0.3) / 0.3)  # Orange blend
+	else:
+		bar_color = Color(0.85, 0.15, 0.1).lerp(Color(0.9, 0.45, 0.1), hp_pct / 0.3)  # Red blend
+
+	var fill_style := boss_hp_bar.get_theme_stylebox("fill") as StyleBoxFlat
+	if fill_style:
+		fill_style.bg_color = bar_color
+
+func _on_boss_defeated() -> void:
+	"""Fade out the boss HP bar over 2 seconds after defeat."""
+	if boss_bar_container == null or not is_instance_valid(boss_bar_container):
+		return
+
+	var tween := create_tween()
+	tween.tween_property(boss_bar_container, "modulate:a", 0.0, 2.0)
+	tween.tween_callback(func():
+		if boss_bar_container and is_instance_valid(boss_bar_container):
+			boss_bar_container.visible = false
+	)
+	boss_node = null
+
+func _on_boss_phase_changed(phase: int) -> void:
+	"""Show phase change indicator when boss enters Phase 2."""
+	if boss_phase_label == null:
+		return
+
+	if phase == 2:
+		boss_phase_label.text = "【二阶·龙魂觉醒】"
+		boss_phase_label.visible = true
+
+		# Flash effect
+		boss_phase_label.modulate = Color(1, 1, 1, 0)
+		var tween := create_tween()
+		tween.tween_property(boss_phase_label, "modulate:a", 1.0, 0.3)
+		tween.tween_property(boss_phase_label, "modulate:a", 0.5, 0.3)
+		tween.tween_property(boss_phase_label, "modulate:a", 1.0, 0.3)
+
+		# Update boss name color to red
+		if boss_name_label:
+			boss_name_label.add_theme_color_override("font_color", Color(1.0, 0.3, 0.2))
 
 # ─── Pause Menu Toggle ───────────────────────────────────────
 func _toggle_pause_menu() -> void:

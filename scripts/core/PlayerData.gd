@@ -224,6 +224,26 @@ func spend_spirit_stones(amount: int) -> bool:
 		return true
 	return false
 
+# ─── Inventory Management ─────────────────────────────────────
+func add_to_inventory(item: Dictionary) -> bool:
+	"""Add an item to the player's inventory. Returns false if inventory is full."""
+	if inventory.size() >= max_inventory_size:
+		push_warning("[PlayerData] Inventory full (%d/%d), cannot add item" % [inventory.size(), max_inventory_size])
+		return false
+	inventory.append(item)
+	inventory_changed.emit()
+	print("[PlayerData] Item added to inventory: %s (total: %d/%d)" % [item.get("name", "Unknown"), inventory.size(), max_inventory_size])
+	return true
+
+func remove_from_inventory(index: int) -> Dictionary:
+	"""Remove an item from inventory by index. Returns the removed item or empty dict."""
+	if index < 0 or index >= inventory.size():
+		return {}
+	var item: Dictionary = inventory[index]
+	inventory.remove_at(index)
+	inventory_changed.emit()
+	return item
+
 # ─── Equipment ─────────────────────────────────────────────────
 func equip_item(slot: String, item: Dictionary) -> Dictionary:
 	"""Equip an item to a slot. Returns the previously equipped item (or empty dict)."""

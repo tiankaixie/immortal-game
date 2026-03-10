@@ -92,6 +92,19 @@ func advance_floor() -> void:
 	current_room = 0
 	floor_advanced.emit(current_floor)
 
+# ─── Equipment Drops ──────────────────────────────────────────
+func grant_random_equipment() -> void:
+	"""Grant a random equipment item to the player's inventory from boss loot."""
+	var slot_pool := ["weapon", "armor", "accessory_1", "talisman"]
+	var slot := slot_pool[randi() % slot_pool.size()]
+
+	# Boss drops: boosted luck (2.0) for higher rarity chance
+	var item := EquipmentSystem.generate_equipment(slot, current_floor, 2.0)
+
+	# Add to player inventory
+	PlayerData.add_to_inventory(item)
+	print("[GameManager] Boss dropped: %s (%s)" % [item.get("name", "Unknown"), item.get("rarity_name", "?")])
+
 # ─── Scene Transitions ────────────────────────────────────────
 func goto_scene(scene_path: String) -> void:
 	"""Deferred scene change to avoid mid-frame issues."""

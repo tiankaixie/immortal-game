@@ -270,13 +270,74 @@ func _perform_aoe_stomp() -> void:
 	_stomp_visual_effect()
 
 func _stomp_visual_effect() -> void:
-	"""Brief visual pulse for stomp attack."""
+	"""Brief visual pulse + particle burst for stomp attack."""
 	if mesh == null:
 		return
 	var original_scale := mesh.scale
 	var tween := create_tween()
 	tween.tween_property(mesh, "scale", original_scale * 1.3, 0.1)
 	tween.tween_property(mesh, "scale", original_scale, 0.2)
+
+	# AoE ring-burst particle effect
+	var particles := GPUParticles3D.new()
+	particles.emitting = true
+	particles.amount = 80
+	particles.lifetime = 1.0
+	particles.one_shot = true
+	particles.explosiveness = 0.9
+
+	var mat := ParticleProcessMaterial.new()
+	mat.direction = Vector3(0, 0.3, 0)
+	mat.spread = 180.0
+	mat.initial_velocity_min = 4.0
+	mat.initial_velocity_max = 7.0
+	mat.gravity = Vector3(0, -3.0, 0)
+	mat.damping_min = 2.0
+	mat.damping_max = 4.0
+	mat.scale_min = 0.15
+	mat.scale_max = 0.35
+	mat.color = Color(1.0, 0.5, 0.1)  # Orange
+
+	# Color ramp: orange → red → fade out
+	var color_ramp := GradientTexture1D.new()
+	var gradient := Gradient.new()
+	gradient.set_color(0, Color(1.0, 0.6, 0.1, 1.0))
+	gradient.add_point(0.5, Color(0.9, 0.2, 0.05, 0.8))
+	gradient.set_color(1, Color(0.5, 0.1, 0.0, 0.0))
+	color_ramp.gradient = gradient
+	mat.color_ramp = color_ramp
+
+	# Emission shape: ring
+	mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_RING
+	mat.emission_ring_radius = aoe_stomp_radius * 0.8
+	mat.emission_ring_inner_radius = 0.3
+	mat.emission_ring_height = 0.2
+	mat.emission_ring_axis = Vector3(0, 1, 0)
+
+	particles.process_material = mat
+
+	# Simple quad mesh for each particle
+	var draw_mesh := QuadMesh.new()
+	draw_mesh.size = Vector2(0.3, 0.3)
+	var draw_mat := StandardMaterial3D.new()
+	draw_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	draw_mat.albedo_color = Color(1.0, 0.7, 0.2)
+	draw_mat.emission_enabled = true
+	draw_mat.emission = Color(1.0, 0.5, 0.1)
+	draw_mat.emission_energy_multiplier = 1.5
+	draw_mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	draw_mesh.material = draw_mat
+	particles.draw_pass_1 = draw_mesh
+
+	particles.position = global_position
+	get_tree().current_scene.add_child(particles)
+
+	# Auto-cleanup after emission
+	var cleanup_timer := get_tree().create_timer(1.5)
+	cleanup_timer.timeout.connect(func():
+		if is_instance_valid(particles):
+			particles.queue_free()
+	)
 
 func _perform_dragon_breath() -> void:
 	"""Ranged dragon breath attack — Phase 2 only."""
@@ -296,6 +357,71 @@ func _perform_dragon_breath() -> void:
 		damage_info["amount"],
 		" (CRIT!)" if damage_info["is_critical"] else ""
 	])
+
+	# Dragon breath particle effect
+	_spawn_breath_particles()
+
+func _spawn_breath_particles() -> void:
+	"""Spawn teal/cyan dragon breath particles toward the player."""
+	if player_ref == null:
+		return
+
+	var particles := GPUParticles3D.new()
+	particles.emitting = true
+	particles.amount = 60
+	particles.lifetime = 0.8
+	particles.one_shot = true
+	particles.explosiveness = 0.7
+
+	# Direction toward player
+	var dir := (player_ref.global_position - global_position).normalized()
+
+	var mat := ParticleProcessMaterial.new()
+	mat.direction = dir
+	mat.spread = 15.0  # Cone-shaped
+	mat.initial_velocity_min = 8.0
+	mat.initial_velocity_max = 14.0
+	mat.gravity = Vector3(0, -1.0, 0)
+	mat.damping_min = 1.0
+	mat.damping_max = 3.0
+	mat.scale_min = 0.1
+	mat.scale_max = 0.3
+	mat.color = Color(0.2, 0.9, 0.85)  # Teal/cyan
+
+	# Color ramp: bright cyan → dark teal → fade
+	var color_ramp := GradientTexture1D.new()
+	var gradient := Gradient.new()
+	gradient.set_color(0, Color(0.3, 1.0, 0.95, 1.0))
+	gradient.add_point(0.4, Color(0.1, 0.7, 0.8, 0.8))
+	gradient.set_color(1, Color(0.05, 0.3, 0.4, 0.0))
+	color_ramp.gradient = gradient
+	mat.color_ramp = color_ramp
+
+	particles.process_material = mat
+
+	# Quad mesh for breath particles
+	var draw_mesh := QuadMesh.new()
+	draw_mesh.size = Vector2(0.25, 0.25)
+	var draw_mat := StandardMaterial3D.new()
+	draw_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	draw_mat.albedo_color = Color(0.3, 0.9, 0.85)
+	draw_mat.emission_enabled = true
+	draw_mat.emission = Color(0.2, 0.8, 0.75)
+	draw_mat.emission_energy_multiplier = 2.0
+	draw_mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	draw_mesh.material = draw_mat
+	particles.draw_pass_1 = draw_mesh
+
+	# Position at boss + slight forward offset
+	particles.position = global_position + dir * 1.0 + Vector3(0, 1.0, 0)
+	get_tree().current_scene.add_child(particles)
+
+	# Auto-cleanup
+	var cleanup_timer := get_tree().create_timer(1.5)
+	cleanup_timer.timeout.connect(func():
+		if is_instance_valid(particles):
+			particles.queue_free()
+	)
 
 # ─── Override Damage Handling ──────────────────────────────────
 func take_damage(amount: float) -> void:
