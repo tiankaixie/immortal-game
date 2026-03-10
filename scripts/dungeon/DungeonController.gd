@@ -10,14 +10,23 @@ extends Node
 
 const MAX_ROOMS: int = 5
 const ROOM_SCENE_PATH: String = "res://scenes/dungeon/TestRoom.tscn"
+const BOSS_ROOM_SCENE_PATH: String = "res://scenes/dungeon/BossRoom.tscn"
 const MERCHANT_SCENE_PATH: String = "res://scenes/npc/Merchant.tscn"
 const MAIN_MENU_PATH: String = "res://scenes/ui/MainMenu.tscn"
+
+# Alternative room layouts for variety
+const ROOM_LAYOUTS: Array[String] = [
+	"res://scenes/dungeon/TestRoom.tscn",
+	"res://scenes/dungeon/NarrowRoom.tscn",
+	"res://scenes/dungeon/OpenRoom.tscn",
+]
 
 # Enemy scene paths
 const ENEMY_SCENE_PATH: String = "res://scenes/enemies/Enemy.tscn"
 const RANGED_ENEMY_SCENE_PATH: String = "res://scenes/enemies/RangedEnemy.tscn"
 const TANK_ENEMY_SCENE_PATH: String = "res://scenes/enemies/TankEnemy.tscn"
 const SWARM_ENEMY_SCENE_PATH: String = "res://scenes/enemies/SwarmEnemy.tscn"
+const BOSS_ENEMY_SCENE_PATH: String = "res://scenes/enemies/BossEnemy.tscn"
 
 # Preloaded enemy scenes
 var enemy_scenes: Dictionary = {}
@@ -115,6 +124,7 @@ func _preload_enemy_scenes() -> void:
 	enemy_scenes[RANGED_ENEMY_SCENE_PATH] = load(RANGED_ENEMY_SCENE_PATH)
 	enemy_scenes[TANK_ENEMY_SCENE_PATH] = load(TANK_ENEMY_SCENE_PATH)
 	enemy_scenes[SWARM_ENEMY_SCENE_PATH] = load(SWARM_ENEMY_SCENE_PATH)
+	enemy_scenes[BOSS_ENEMY_SCENE_PATH] = load(BOSS_ENEMY_SCENE_PATH)
 	print("[DungeonController] Enemy scenes preloaded")
 
 func _connect_room_manager() -> void:
@@ -249,25 +259,38 @@ func _swap_room() -> void:
 	# Wait a frame for cleanup
 	await get_tree().process_frame
 
+	# Pick room scene: BossRoom for BOSS rooms, random layout for others
+	var room_path: String
+	if _determine_room_type(current_room_number) == RoomType.BOSS:
+		room_path = BOSS_ROOM_SCENE_PATH
+	else:
+		room_path = ROOM_LAYOUTS[randi() % ROOM_LAYOUTS.size()]
+
 	# Load fresh room
-	var packed := load(ROOM_SCENE_PATH) as PackedScene
+	var packed := load(room_path) as PackedScene
 	if packed == null:
-		push_error("[DungeonController] Failed to load room scene: %s" % ROOM_SCENE_PATH)
+		push_error("[DungeonController] Failed to load room scene: %s" % room_path)
 		return
 
 	room_node = packed.instantiate()
 	main.add_child(room_node)
 
-	# Remove default static enemies from TestRoom (Enemy1, Enemy2, etc.)
-	var static_enemies: Array[Node] = []
-	for child in room_node.get_children():
-		if child.has_method("take_damage") and child.name != "Player":
-			static_enemies.append(child)
-	for e in static_enemies:
-		e.queue_free()
+	# For boss rooms, keep the pre-placed Boss and connect signal
+	var is_boss_room := _determine_room_type(current_room_number) == RoomType.BOSS
+	if is_boss_room:
+		# Connect boss_defeated signal for special handling
+		_connect_boss_signals()
+	else:
+		# Remove default static enemies from room template (Enemy1, Enemy2, etc.)
+		var static_enemies: Array[Node] = []
+		for child in room_node.get_children():
+			if child.has_method("take_damage") and child.name != "Player":
+				static_enemies.append(child)
+		for e in static_enemies:
+			e.queue_free()
 
-	# Spawn enemies based on room difficulty composition
-	_spawn_room_enemies()
+		# Spawn enemies based on room difficulty composition
+		_spawn_room_enemies()
 
 	# Re-wire player and enemies
 	var player := room_node.get_node_or_null("Player")
@@ -454,6 +477,62 @@ func _spawn_treasure_chest() -> void:
 	chest.set_meta("is_treasure_chest", true)
 	print("[DungeonController] Treasure chest spawned in room %d" % current_room_number)
 
+# ─── Boss Room Handling ────────────────────────────────────────
+func _connect_boss_signals() -> void:
+	"""Find the BossEnemy in the room and connect its boss_defeated signal."""
+	if room_node == null:
+		return
+
+	for child in room_node.get_children():
+		if child.has_signal("boss_defeated"):
+			child.boss_defeated.connect(_on_boss_defeated)
+			print("[DungeonController] Connected to BossEnemy boss_defeated signal")
+			return
+
+func _on_boss_defeated() -> void:
+	"""Boss killed — show victory message, then trigger room_cleared after delay."""
+	print("[DungeonController] ═══ BOSS 已击败！ ═══")
+
+	# Show boss defeated message
+	_show_boss_defeated_message()
+
+	# Delay before triggering room cleared (celebration moment)
+	var timer := get_tree().create_timer(2.5)
+	timer.timeout.connect(_on_boss_celebration_done)
+
+func _on_boss_celebration_done() -> void:
+	"""After celebration delay, trigger normal room cleared flow."""
+	_on_room_cleared()
+
+func _show_boss_defeated_message() -> void:
+	"""Display a dramatic BOSS defeated message on screen."""
+	var canvas := CanvasLayer.new()
+	canvas.layer = 18
+	add_child(canvas)
+
+	var label := Label.new()
+	label.text = "✦ BOSS 已击败！ ✦\n苍龙天魔 陨落"
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.set_anchors_preset(Control.PRESET_CENTER)
+	label.anchor_left = 0.5
+	label.anchor_top = 0.3
+	label.anchor_right = 0.5
+	label.anchor_bottom = 0.3
+	label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	label.grow_vertical = Control.GROW_DIRECTION_BOTH
+	label.add_theme_font_size_override("font_size", 48)
+	label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
+	canvas.add_child(label)
+
+	# Animate: scale in, hold, fade out
+	canvas.modulate = Color(1, 1, 1, 0)
+	var tween := canvas.create_tween()
+	tween.tween_property(canvas, "modulate:a", 1.0, 0.4)
+	tween.tween_interval(2.0)
+	tween.tween_property(canvas, "modulate:a", 0.0, 0.8)
+	tween.tween_callback(canvas.queue_free)
+
 # ─── Enemy Spawning ───────────────────────────────────────────
 func _spawn_room_enemies() -> void:
 	"""Spawn enemies based on current room number difficulty."""
@@ -495,8 +574,8 @@ func _get_room_composition() -> Array:
 	return pool[randi() % pool.size()]
 
 func _get_spawn_position(index: int) -> Vector3:
-	"""Calculate a spawn position for an enemy, spread around the room."""
-	# Spawn in a circle/spread pattern away from center (player spawn)
+	"""Calculate a spawn position for an enemy, spread around the room.
+	Adapts to different room layouts."""
 	var spawn_positions: Array[Vector3] = [
 		Vector3(5.0, 0.5, -5.0),
 		Vector3(-4.0, 0.5, -3.0),
