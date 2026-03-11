@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://skillunlocknotif001"]
+
+[ext_resource type="Script" path="res://scripts/ui/SkillUnlockNotification.gd" id="1_notif"]
+
+[node name="SkillUnlockNotification" type="CanvasLayer"]
+layer = 25
+script = ExtResource("1_notif")

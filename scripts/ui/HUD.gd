@@ -64,6 +64,10 @@ const PauseMenuScene = preload("res://scenes/ui/PauseMenu.tscn")
 var drop_notification: Control = null
 const DropNotificationScene = preload("res://scenes/ui/DropNotification.tscn")
 
+# Skill Unlock Notification
+var skill_unlock_notification: CanvasLayer = null
+const SkillUnlockNotificationScene = preload("res://scenes/ui/SkillUnlockNotification.tscn")
+
 # ─── Boss HP Bar ──────────────────────────────────────────────
 var boss_bar_container: Control = null
 var boss_hp_bar: ProgressBar = null
@@ -99,6 +103,9 @@ func _ready() -> void:
 
 	# Create drop notification overlay
 	_create_drop_notification()
+
+	# Create skill unlock notification overlay
+	_create_skill_unlock_notification()
 
 	print("[HUD] Ready")
 
@@ -278,6 +285,11 @@ func _create_drop_notification() -> void:
 	drop_notification = DropNotificationScene.instantiate()
 	add_child(drop_notification)
 
+func _create_skill_unlock_notification() -> void:
+	"""Create the skill unlock notification overlay."""
+	skill_unlock_notification = SkillUnlockNotificationScene.instantiate()
+	get_tree().root.call_deferred("add_child", skill_unlock_notification)
+
 # ─── Skill Panel ─────────────────────────────────────────────
 func _create_skill_panel() -> void:
 	"""Create a panel at the bottom-center showing up to 4 equipped skills."""
@@ -432,8 +444,11 @@ func _get_element_name(element: String) -> String:
 		"lightning": return "雷"
 		_: return "无"
 
-func _on_skill_learned(_skill_id: String) -> void:
+func _on_skill_learned(skill_id: String) -> void:
 	refresh_skill_panel()
+	# Show skill unlock notification
+	if skill_unlock_notification and skill_unlock_notification.has_method("show_skill_notification"):
+		skill_unlock_notification.show_skill_notification(skill_id)
 
 # ─── Inventory Toggle ─────────────────────────────────────────
 func _unhandled_input(event: InputEvent) -> void:
