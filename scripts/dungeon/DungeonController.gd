@@ -13,6 +13,7 @@ const ROOM_SCENE_PATH: String = "res://scenes/dungeon/TestRoom.tscn"
 const BOSS_ROOM_SCENE_PATH: String = "res://scenes/dungeon/BossRoom.tscn"
 const MERCHANT_SCENE_PATH: String = "res://scenes/npc/Merchant.tscn"
 const MAIN_MENU_PATH: String = "res://scenes/ui/MainMenu.tscn"
+const BOSS_VICTORY_PANEL_PATH: String = "res://scenes/ui/BossVictoryPanel.tscn"
 
 # Alternative room layouts for variety
 const ROOM_LAYOUTS: Array[String] = [
@@ -96,6 +97,9 @@ var room_node: Node3D = null
 var is_transitioning: bool = false
 var shop_room_number: int = -1  # Which room is a shop room (-1 = none)
 var treasure_rooms: Array[int] = []  # Pre-determined treasure room numbers
+
+# Boss loot tracking for victory panel
+var last_boss_loot: Dictionary = {}
 
 # Fade overlay
 var fade_overlay: ColorRect = null
@@ -543,19 +547,27 @@ func _connect_boss_signals() -> void:
 			return
 
 func _on_boss_defeated() -> void:
-	"""Boss killed — show victory message, then trigger room_cleared after delay."""
+	"""Boss killed — show victory message, then show BossVictoryPanel."""
 	print("[DungeonController] ═══ BOSS 已击败！ ═══")
 
-	# Show boss defeated message
+	# Capture loot info (the boss already granted loot in _drop_boss_loot,
+	# but we track the last inventory item for display)
+	last_boss_loot = {}
+	if PlayerData.inventory.size() > 0:
+		var last_item: Dictionary = PlayerData.inventory[PlayerData.inventory.size() - 1]
+		last_boss_loot["equipment_name"] = last_item.get("name", "")
+		last_boss_loot["equipment_quality"] = last_item.get("rarity_name", "")
+	# Spirit stones: estimate from boss type
+	last_boss_loot["spirit_stones"] = randi_range(50, 80) if boss_type == TRIBULATION_BOSS_SCENE_PATH else randi_range(30, 50)
+
 	_show_boss_defeated_message()
 
-	# Delay before triggering room cleared (celebration moment)
 	var timer := get_tree().create_timer(2.5)
 	timer.timeout.connect(_on_boss_celebration_done)
 
 func _on_boss_celebration_done() -> void:
-	"""After celebration delay, trigger normal room cleared flow."""
-	_on_room_cleared()
+	"""After celebration delay, show BossVictoryPanel instead of normal boon selection."""
+	_show_boss_victory_panel()
 
 func _show_boss_defeated_message() -> void:
 	"""Display a dramatic BOSS defeated message on screen."""
@@ -594,6 +606,50 @@ func _show_boss_defeated_message() -> void:
 	tween.tween_interval(2.0)
 	tween.tween_property(canvas, "modulate:a", 0.0, 0.8)
 	tween.tween_callback(canvas.queue_free)
+
+func _show_boss_victory_panel() -> void:
+	"""Show the BossVictoryPanel with loot and 4 boon cards (higher rarity chance)."""
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+
+	var panel_scene := load(BOSS_VICTORY_PANEL_PATH)
+	if panel_scene == null:
+		# Fallback to normal boon selection
+		_show_boon_selection()
+		return
+
+	# Generate 4 boons with boosted rarity for boss rewards
+	var boons := _get_boss_boons(4)
+
+	var panel := panel_scene.instantiate()
+	add_child(panel)
+	panel.show(last_boss_loot, boons)
+
+	if panel.has_signal("boon_chosen"):
+		panel.boon_chosen.connect(_on_boss_victory_closed)
+
+func _on_boss_victory_closed(_boon_id: String) -> void:
+	"""Boss victory panel closed — proceed to next room or completion."""
+	_on_boon_selected()
+
+func _get_boss_boons(count: int) -> Array[Dictionary]:
+	"""Get boons with higher chance of rare/legendary for boss rewards."""
+	var all := BoonDatabase.all_boons.duplicate()
+	all.shuffle()
+
+	# Sort so rare/legendary appear first, then pick top `count`
+	all.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return a.get("rarity", 0) > b.get("rarity", 0)
+	)
+
+	var result: Array[Dictionary] = []
+	for boon in all:
+		if result.size() >= count:
+			break
+		result.append(boon)
+
+	# Shuffle the selected boons so order is random
+	result.shuffle()
+	return result
 
 # ─── Elite Enemy Spawning ──────────────────────────────────────
 func _spawn_elite_enemy() -> void:
