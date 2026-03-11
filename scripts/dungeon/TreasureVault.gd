@@ -13,6 +13,7 @@ var player_ref: Node3D = null
 
 func _ready() -> void:
 	call_deferred("_setup_chests")
+	call_deferred("_add_decorations")
 
 func _setup_chests() -> void:
 	"""Initialize player reference and tag chest nodes for interaction."""
@@ -29,6 +30,57 @@ func _setup_chests() -> void:
 			child.set_meta("is_treasure_chest", true)
 			child.set_meta("chest_opened", false)
 	print("[TreasureVault] Chests initialized")
+
+func _add_decorations() -> void:
+	"""Add atmospheric decorations: corner pillars + candle lights."""
+	# 4 stone pillars at corners
+	var pillar_positions := [
+		Vector3(-8.0, 0.0, -8.0),
+		Vector3(8.0, 0.0, -8.0),
+		Vector3(-8.0, 0.0, 8.0),
+		Vector3(8.0, 0.0, 8.0),
+	]
+	for pos in pillar_positions:
+		var pillar := CSGCylinder3D.new()
+		pillar.radius = 0.4
+		pillar.height = 4.0
+		pillar.sides = 8
+		pillar.position = pos + Vector3(0, 2.0, 0)  # Center at half-height
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = Color(0.35, 0.28, 0.22)
+		mat.metallic = 0.15
+		mat.roughness = 0.85
+		pillar.material = mat
+		add_child(pillar)
+
+		# Candle light on top of each pillar
+		var light := OmniLight3D.new()
+		light.position = pos + Vector3(0, 4.2, 0)
+		light.light_color = Color(1.0, 0.75, 0.3)
+		light.light_energy = 1.5
+		light.omni_range = 6.0
+		light.omni_attenuation = 1.5
+		light.shadow_enabled = false
+		add_child(light)
+
+		# Small flame mesh on top of pillar
+		var flame := MeshInstance3D.new()
+		var sphere := SphereMesh.new()
+		sphere.radius = 0.1
+		sphere.height = 0.25
+		var flame_mat := StandardMaterial3D.new()
+		flame_mat.albedo_color = Color(1.0, 0.6, 0.1)
+		flame_mat.emission_enabled = true
+		flame_mat.emission = Color(1.0, 0.7, 0.2)
+		flame_mat.emission_energy_multiplier = 3.0
+		flame_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		flame_mat.albedo_color.a = 0.8
+		sphere.material = flame_mat
+		flame.mesh = sphere
+		flame.position = pos + Vector3(0, 4.15, 0)
+		add_child(flame)
+
+	print("[TreasureVault] Decorations added: 4 pillars + candles")
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:

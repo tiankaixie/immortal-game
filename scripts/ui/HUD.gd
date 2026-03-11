@@ -491,6 +491,10 @@ func register_boss(boss: Node) -> void:
 	if boss.get("max_hp") != null:
 		_on_boss_hp_changed(boss.current_hp, boss.max_hp)
 
+	# Set boss name dynamically
+	if boss_name_label and boss.get("enemy_name") != null:
+		boss_name_label.text = boss.enemy_name
+
 	boss_bar_container.visible = true
 	boss_bar_container.modulate = Color(1, 1, 1, 0)
 	var tween := create_tween()
@@ -519,7 +523,7 @@ func _create_boss_hp_bar() -> void:
 
 	# Boss name label
 	boss_name_label = Label.new()
-	boss_name_label.text = "苍龙天魔"
+	boss_name_label.text = "Boss"  # Will be updated in register_boss
 	boss_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	boss_name_label.add_theme_font_size_override("font_size", 22)
 	boss_name_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
