@@ -11,9 +11,9 @@ radius = 0.7
 height = 3.2
 
 [sub_resource type="StandardMaterial3D" id="Material_trib"]
-albedo_color = Color(0.9, 0.88, 0.6, 1)
+albedo_color = Color(0.35, 0.15, 0.55, 1)
 emission_enabled = true
-emission = Color(0.8, 0.85, 0.4)
+emission = Color(0.8, 0.7, 0.2)
 emission_energy_multiplier = 0.6
 metallic = 0.6
 roughness = 0.3
@@ -39,5 +39,5 @@ pixel_size = 0.01
 font_size = 40
 outline_size = 10
 text = "天劫
-800 / 800"
+700 / 700"
 billboard = 1

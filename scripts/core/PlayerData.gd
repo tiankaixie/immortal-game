@@ -96,6 +96,7 @@ signal equipment_changed(slot: String)
 signal inventory_changed()
 signal sp_updated(current: float, maximum: float)
 signal skill_learned(skill_id: String)
+signal realm_changed(realm: int, stage: int)
 
 func _ready() -> void:
 	_recalculate_sp_max()
@@ -135,7 +136,10 @@ func _on_realm_breakthrough() -> void:
 	"""Handle realm-up effects: stat boosts, new skill slots, etc."""
 	# TODO: Trigger tribulation challenge before actually advancing
 	# TODO: Apply realm-specific stat multipliers
-	
+
+	# Emit realm_changed signal for UI notifications
+	realm_changed.emit(cultivation_realm, cultivation_stage)
+
 	# Unlock additional skill slot at key realms
 	match cultivation_realm:
 		CultivationRealm.FOUNDATION_ESTABLISHMENT:

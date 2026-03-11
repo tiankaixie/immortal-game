@@ -621,24 +621,46 @@ func _on_boss_defeated() -> void:
 	boss_node = null
 
 func _on_boss_phase_changed(phase: int) -> void:
-	"""Show phase change indicator when boss enters Phase 2."""
+	"""Show phase change indicator when boss enters a new phase."""
 	if boss_phase_label == null:
 		return
 
-	if phase == 2:
-		boss_phase_label.text = "【二阶·龙魂觉醒】"
-		boss_phase_label.visible = true
+	# Determine phase text based on boss type
+	var phase_text := ""
+	var name_color := Color(1.0, 0.3, 0.2)
 
-		# Flash effect
-		boss_phase_label.modulate = Color(1, 1, 1, 0)
-		var tween := create_tween()
-		tween.tween_property(boss_phase_label, "modulate:a", 1.0, 0.3)
-		tween.tween_property(boss_phase_label, "modulate:a", 0.5, 0.3)
-		tween.tween_property(boss_phase_label, "modulate:a", 1.0, 0.3)
+	if boss_node and boss_node.get("enemy_name") == "天劫":
+		# Tribulation Boss phases
+		match phase:
+			2:
+				phase_text = "【二阶·雷链天罚】"
+				name_color = Color(1.0, 0.9, 0.4)  # Gold
+			3:
+				phase_text = "【三阶·劫雷降世】"
+				name_color = Color(1.0, 1.0, 0.8)  # White-gold
+	else:
+		# Default boss (苍龙天魔) phases
+		match phase:
+			2:
+				phase_text = "【二阶·龙魂觉醒】"
+				name_color = Color(1.0, 0.3, 0.2)
 
-		# Update boss name color to red
-		if boss_name_label:
-			boss_name_label.add_theme_color_override("font_color", Color(1.0, 0.3, 0.2))
+	if phase_text.is_empty():
+		return
+
+	boss_phase_label.text = phase_text
+	boss_phase_label.visible = true
+
+	# Flash effect
+	boss_phase_label.modulate = Color(1, 1, 1, 0)
+	var tween := create_tween()
+	tween.tween_property(boss_phase_label, "modulate:a", 1.0, 0.3)
+	tween.tween_property(boss_phase_label, "modulate:a", 0.5, 0.3)
+	tween.tween_property(boss_phase_label, "modulate:a", 1.0, 0.3)
+
+	# Update boss name color
+	if boss_name_label:
+		boss_name_label.add_theme_color_override("font_color", name_color)
 
 # ─── Pause Menu Toggle ───────────────────────────────────────
 func _toggle_pause_menu() -> void:
