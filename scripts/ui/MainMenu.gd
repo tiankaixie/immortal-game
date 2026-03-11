@@ -27,20 +27,8 @@ func _ready() -> void:
 	print("[MainMenu] Ready")
 
 func _on_new_game() -> void:
-	"""Start a fresh game."""
-	# Reset PlayerData to defaults
-	PlayerData.cultivation_realm = PlayerData.CultivationRealm.QI_CONDENSATION
-	PlayerData.cultivation_stage = PlayerData.CultivationStage.EARLY
-	PlayerData.cultivation_xp = 0.0
-	PlayerData.spirit_stones = 0
-	PlayerData.sp = PlayerData.sp_max
-	
-	# Give starter skills
-	var starters := SkillDatabase.get_starter_skills(PlayerData.spiritual_root)
-	PlayerData.unlocked_skills = starters
-	PlayerData.equipped_skills = starters
-	
-	GameManager.goto_scene("res://scenes/Main.tscn")
+	"""Go to spirit root selection screen."""
+	GameManager.goto_scene("res://scenes/ui/SpiritRootSelection.tscn")
 
 func _on_continue() -> void:
 	"""Load saved game and continue."""
