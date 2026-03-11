@@ -29,7 +29,15 @@ const RANGED_ENEMY_SCENE_PATH: String = "res://scenes/enemies/RangedEnemy.tscn"
 const TANK_ENEMY_SCENE_PATH: String = "res://scenes/enemies/TankEnemy.tscn"
 const SWARM_ENEMY_SCENE_PATH: String = "res://scenes/enemies/SwarmEnemy.tscn"
 const BOSS_ENEMY_SCENE_PATH: String = "res://scenes/enemies/BossEnemy.tscn"
+const TRIBULATION_BOSS_SCENE_PATH: String = "res://scenes/enemies/TribulationBoss.tscn"
 const ELITE_ENEMY_SCENE_PATH: String = "res://scenes/enemies/EliteEnemy.tscn"
+
+# Boss type selection for the run
+const BOSS_TYPES: Array[String] = [
+	"res://scenes/enemies/BossEnemy.tscn",
+	"res://scenes/enemies/TribulationBoss.tscn",
+]
+var boss_type: String = ""  # Selected boss for this run
 
 # Preloaded enemy scenes
 var enemy_scenes: Dictionary = {}
@@ -105,6 +113,9 @@ func _ready() -> void:
 	# Preload enemy scenes
 	_preload_enemy_scenes()
 
+	# Select boss type for this run (random from pool)
+	boss_type = BOSS_TYPES[randi() % BOSS_TYPES.size()]
+
 	# Decide if this run has a shop room (50% chance)
 	if randf() < 0.5:
 		shop_room_number = SHOP_ROOM_CANDIDATES[randi() % SHOP_ROOM_CANDIDATES.size()]
@@ -128,6 +139,7 @@ func _preload_enemy_scenes() -> void:
 	enemy_scenes[TANK_ENEMY_SCENE_PATH] = load(TANK_ENEMY_SCENE_PATH)
 	enemy_scenes[SWARM_ENEMY_SCENE_PATH] = load(SWARM_ENEMY_SCENE_PATH)
 	enemy_scenes[BOSS_ENEMY_SCENE_PATH] = load(BOSS_ENEMY_SCENE_PATH)
+	enemy_scenes[TRIBULATION_BOSS_SCENE_PATH] = load(TRIBULATION_BOSS_SCENE_PATH)
 	enemy_scenes[ELITE_ENEMY_SCENE_PATH] = load(ELITE_ENEMY_SCENE_PATH)
 	print("[DungeonController] Enemy scenes preloaded")
 
@@ -279,11 +291,12 @@ func _swap_room() -> void:
 	room_node = packed.instantiate()
 	main.add_child(room_node)
 
-	# For boss rooms, keep the pre-placed Boss and connect signal
+	# For boss rooms, replace pre-placed boss with selected boss_type and connect signal
 	var is_boss_room := _determine_room_type(current_room_number) == RoomType.BOSS
 	var is_elite_room := _determine_room_type(current_room_number) == RoomType.ELITE
 	if is_boss_room:
-		# Connect boss_defeated signal for special handling
+		# Remove pre-placed boss and spawn selected boss_type
+		_replace_boss_with_selected()
 		_connect_boss_signals()
 	else:
 		# Remove default static enemies from room template (Enemy1, Enemy2, etc.)
@@ -487,6 +500,28 @@ func _spawn_treasure_chest() -> void:
 	print("[DungeonController] Treasure chest spawned in room %d" % current_room_number)
 
 # ─── Boss Room Handling ────────────────────────────────────────
+func _replace_boss_with_selected() -> void:
+	"""Replace the pre-placed BossEnemy with the selected boss_type for this run."""
+	if room_node == null or boss_type == BOSS_ENEMY_SCENE_PATH or boss_type == "":
+		return  # Default boss is already placed, no swap needed
+
+	# Remove pre-placed bosses
+	var to_remove: Array[Node] = []
+	for child in room_node.get_children():
+		if child.has_signal("boss_defeated"):
+			to_remove.append(child)
+	for node in to_remove:
+		node.queue_free()
+
+	# Spawn selected boss
+	var scene: PackedScene = enemy_scenes.get(boss_type) as PackedScene
+	if scene == null:
+		scene = load(boss_type) as PackedScene
+	if scene:
+		var boss := scene.instantiate()
+		boss.position = Vector3(0.0, 0.5, -6.0)
+		room_node.add_child(boss)
+
 func _connect_boss_signals() -> void:
 	"""Find the BossEnemy in the room and connect its boss_defeated signal + HUD registration."""
 	if room_node == null:
@@ -524,12 +559,21 @@ func _on_boss_celebration_done() -> void:
 
 func _show_boss_defeated_message() -> void:
 	"""Display a dramatic BOSS defeated message on screen."""
+	# Find boss name from the defeated boss
+	var boss_name := "Boss"
+	if room_node:
+		for child in room_node.get_children():
+			if child.get("enemy_name") != null and child.get("current_hp") != null:
+				if child.current_hp <= 0:
+					boss_name = child.enemy_name
+					break
+
 	var canvas := CanvasLayer.new()
 	canvas.layer = 18
 	add_child(canvas)
 
 	var label := Label.new()
-	label.text = "✦ BOSS 已击败！ ✦\n苍龙天魔 陨落"
+	label.text = "✦ BOSS 已击败！ ✦\n%s 陨落" % boss_name
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.set_anchors_preset(Control.PRESET_CENTER)
