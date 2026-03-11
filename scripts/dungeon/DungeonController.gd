@@ -11,17 +11,20 @@ extends Node
 const MAX_ROOMS: int = 5
 const ROOM_SCENE_PATH: String = "res://scenes/dungeon/TestRoom.tscn"
 const BOSS_ROOM_SCENE_PATH: String = "res://scenes/dungeon/BossRoom.tscn"
+const TREASURE_VAULT_SCENE_PATH: String = "res://scenes/dungeon/TreasureVault.tscn"
+const AMBUSH_ROOM_SCENE_PATH: String = "res://scenes/dungeon/AmbushRoom.tscn"
 const MERCHANT_SCENE_PATH: String = "res://scenes/npc/Merchant.tscn"
 const MAIN_MENU_PATH: String = "res://scenes/ui/MainMenu.tscn"
 const BOSS_VICTORY_PANEL_PATH: String = "res://scenes/ui/BossVictoryPanel.tscn"
 
-# Alternative room layouts for variety
+# Alternative room layouts for variety (normal rooms)
 const ROOM_LAYOUTS: Array[String] = [
 	"res://scenes/dungeon/TestRoom.tscn",
 	"res://scenes/dungeon/NarrowRoom.tscn",
 	"res://scenes/dungeon/OpenRoom.tscn",
 	"res://scenes/dungeon/CrossRoom.tscn",
 	"res://scenes/dungeon/CircularRoom.tscn",
+	"res://scenes/dungeon/AmbushRoom.tscn",
 ]
 
 # Enemy scene paths
@@ -279,10 +282,13 @@ func _swap_room() -> void:
 	# Wait a frame for cleanup
 	await get_tree().process_frame
 
-	# Pick room scene: BossRoom for BOSS rooms, random layout for others
+	# Pick room scene based on room type
 	var room_path: String
-	if _determine_room_type(current_room_number) == RoomType.BOSS:
+	var next_room_type := _determine_room_type(current_room_number)
+	if next_room_type == RoomType.BOSS:
 		room_path = BOSS_ROOM_SCENE_PATH
+	elif next_room_type == RoomType.TREASURE:
+		room_path = TREASURE_VAULT_SCENE_PATH
 	else:
 		room_path = ROOM_LAYOUTS[randi() % ROOM_LAYOUTS.size()]
 
@@ -354,8 +360,8 @@ func _swap_room() -> void:
 	room_number_changed.emit(current_room_number, MAX_ROOMS)
 	room_type_changed.emit(current_room_type, ROOM_TYPE_NAMES.get(current_room_type, "普通间"))
 
-	# Spawn treasure chest in treasure rooms
-	if current_room_type == RoomType.TREASURE:
+	# Spawn treasure chest in treasure rooms (only if not using TreasureVault scene which has built-in chests)
+	if current_room_type == RoomType.TREASURE and room_path != TREASURE_VAULT_SCENE_PATH:
 		_spawn_treasure_chest()
 
 	print("[DungeonController] Loaded room %d/%d (%s)" % [current_room_number, MAX_ROOMS, ROOM_TYPE_NAMES.get(current_room_type, "普通间")])

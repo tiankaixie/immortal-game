@@ -1,0 +1,126 @@
+[gd_scene load_steps=14 format=3 uid="uid://ambushroom001"]
+
+[ext_resource type="PackedScene" uid="uid://player001" path="res://scenes/player/Player.tscn" id="1_player"]
+[ext_resource type="PackedScene" uid="uid://swarmenemy001" path="res://scenes/enemies/SwarmEnemy.tscn" id="2_swarm"]
+[ext_resource type="PackedScene" uid="uid://rangedenemy001" path="res://scenes/enemies/RangedEnemy.tscn" id="3_ranged"]
+[ext_resource type="Script" path="res://scripts/dungeon/RoomManager.gd" id="4_roommanager"]
+[ext_resource type="Script" path="res://scripts/dungeon/AmbushRoom.gd" id="5_ambushroom"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_floor"]
+size = Vector2(22, 22)
+
+[sub_resource type="StandardMaterial3D" id="Material_floor"]
+albedo_color = Color(0.25, 0.2, 0.2, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_wall"]
+size = Vector3(22, 4, 0.5)
+
+[sub_resource type="StandardMaterial3D" id="Material_wall"]
+albedo_color = Color(0.4, 0.32, 0.3, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape_floor"]
+size = Vector3(22, 0.1, 22)
+
+[sub_resource type="BoxShape3D" id="BoxShape_wall"]
+size = Vector3(22, 4, 0.5)
+
+[sub_resource type="NavigationMesh" id="NavigationMesh_room"]
+vertices = PackedVector3Array(-10.5, 0, -10.5, -10.5, 0, 10.5, 10.5, 0, 10.5, 10.5, 0, -10.5)
+polygons = [PackedInt32Array(0, 1, 2, 3)]
+
+[sub_resource type="SphereShape3D" id="SphereShape_trigger"]
+radius = 4.0
+
+[node name="AmbushRoom" type="Node3D"]
+script = ExtResource("5_ambushroom")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 10, 0)
+light_energy = 0.5
+light_color = Color(0.85, 0.8, 0.9, 1)
+shadow_enabled = true
+
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="."]
+navigation_mesh = SubResource("NavigationMesh_room")
+
+[node name="Floor" type="StaticBody3D" parent="NavigationRegion3D"]
+
+[node name="FloorMesh" type="MeshInstance3D" parent="NavigationRegion3D/Floor"]
+mesh = SubResource("PlaneMesh_floor")
+surface_material_override/0 = SubResource("Material_floor")
+
+[node name="FloorCollision" type="CollisionShape3D" parent="NavigationRegion3D/Floor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0)
+shape = SubResource("BoxShape_floor")
+
+[node name="WallNorth" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, -11)
+
+[node name="WallNorthMesh" type="MeshInstance3D" parent="NavigationRegion3D/WallNorth"]
+mesh = SubResource("BoxMesh_wall")
+surface_material_override/0 = SubResource("Material_wall")
+
+[node name="WallNorthCollision" type="CollisionShape3D" parent="NavigationRegion3D/WallNorth"]
+shape = SubResource("BoxShape_wall")
+
+[node name="WallSouth" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 11)
+
+[node name="WallSouthMesh" type="MeshInstance3D" parent="NavigationRegion3D/WallSouth"]
+mesh = SubResource("BoxMesh_wall")
+surface_material_override/0 = SubResource("Material_wall")
+
+[node name="WallSouthCollision" type="CollisionShape3D" parent="NavigationRegion3D/WallSouth"]
+shape = SubResource("BoxShape_wall")
+
+[node name="WallEast" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 11, 2, 0)
+
+[node name="WallEastMesh" type="MeshInstance3D" parent="NavigationRegion3D/WallEast"]
+mesh = SubResource("BoxMesh_wall")
+surface_material_override/0 = SubResource("Material_wall")
+
+[node name="WallEastCollision" type="CollisionShape3D" parent="NavigationRegion3D/WallEast"]
+shape = SubResource("BoxShape_wall")
+
+[node name="WallWest" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -11, 2, 0)
+
+[node name="WallWestMesh" type="MeshInstance3D" parent="NavigationRegion3D/WallWest"]
+mesh = SubResource("BoxMesh_wall")
+surface_material_override/0 = SubResource("Material_wall")
+
+[node name="WallWestCollision" type="CollisionShape3D" parent="NavigationRegion3D/WallWest"]
+shape = SubResource("BoxShape_wall")
+
+[node name="RoomManager" type="Node" parent="."]
+script = ExtResource("4_roommanager")
+
+[node name="AmbushTrigger" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -3)
+
+[node name="TriggerCollision" type="CollisionShape3D" parent="AmbushTrigger"]
+shape = SubResource("SphereShape_trigger")
+
+[node name="Player" parent="." instance=ExtResource("1_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 5)
+
+[node name="SwarmEnemy1" parent="." instance=ExtResource("2_swarm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0.5, -8)
+enemy_name = "暗影蝠"
+
+[node name="SwarmEnemy2" parent="." instance=ExtResource("2_swarm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0.5, -8)
+enemy_name = "暗影蝠"
+
+[node name="SwarmEnemy3" parent="." instance=ExtResource("2_swarm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0.5, 8)
+enemy_name = "暗影蝠"
+
+[node name="SwarmEnemy4" parent="." instance=ExtResource("2_swarm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0.5, 8)
+enemy_name = "暗影蝠"
+
+[node name="RangedEnemy1" parent="." instance=ExtResource("3_ranged")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, -7)
+enemy_name = "幽魂射手"

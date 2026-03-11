@@ -1,0 +1,184 @@
+[gd_scene load_steps=16 format=3 uid="uid://treasurevault001"]
+
+[ext_resource type="PackedScene" uid="uid://player001" path="res://scenes/player/Player.tscn" id="1_player"]
+[ext_resource type="Script" path="res://scripts/dungeon/RoomManager.gd" id="2_roommanager"]
+[ext_resource type="Script" path="res://scripts/dungeon/TreasureVault.gd" id="3_treasurevault"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_floor"]
+size = Vector2(24, 24)
+
+[sub_resource type="StandardMaterial3D" id="Material_floor"]
+albedo_color = Color(0.2, 0.15, 0.25, 1)
+emission_enabled = true
+emission = Color(0.15, 0.1, 0.2)
+emission_energy_multiplier = 0.2
+
+[sub_resource type="BoxMesh" id="BoxMesh_wall"]
+size = Vector3(24, 5, 0.5)
+
+[sub_resource type="StandardMaterial3D" id="Material_wall"]
+albedo_color = Color(0.3, 0.2, 0.35, 1)
+emission_enabled = true
+emission = Color(0.25, 0.15, 0.3)
+emission_energy_multiplier = 0.15
+metallic = 0.3
+
+[sub_resource type="BoxShape3D" id="BoxShape_floor"]
+size = Vector3(24, 0.1, 24)
+
+[sub_resource type="BoxShape3D" id="BoxShape_wall"]
+size = Vector3(24, 5, 0.5)
+
+[sub_resource type="NavigationMesh" id="NavigationMesh_room"]
+vertices = PackedVector3Array(-11.5, 0, -11.5, -11.5, 0, 11.5, 11.5, 0, 11.5, 11.5, 0, -11.5)
+polygons = [PackedInt32Array(0, 1, 2, 3)]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_chest"]
+radius = 0.45
+height = 0.9
+
+[sub_resource type="StandardMaterial3D" id="Material_chest"]
+albedo_color = Color(0.85, 0.7, 0.15, 1)
+emission_enabled = true
+emission = Color(1.0, 0.85, 0.2)
+emission_energy_multiplier = 0.6
+metallic = 0.85
+roughness = 0.25
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape_chest"]
+radius = 0.5
+height = 1.0
+
+[sub_resource type="SphereShape3D" id="SphereShape_interact"]
+radius = 2.5
+
+[sub_resource type="SphereShape3D" id="SphereShape_ambient"]
+radius = 0.15
+
+[node name="TreasureVault" type="Node3D"]
+script = ExtResource("3_treasurevault")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 12, 0)
+light_energy = 0.6
+light_color = Color(1.0, 0.9, 0.7, 1)
+shadow_enabled = true
+
+[node name="OmniLight3D_Left" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 3, -5)
+light_color = Color(1.0, 0.85, 0.3, 1)
+light_energy = 1.5
+omni_range = 8.0
+
+[node name="OmniLight3D_Right" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 3, -5)
+light_color = Color(1.0, 0.85, 0.3, 1)
+light_energy = 1.5
+omni_range = 8.0
+
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="."]
+navigation_mesh = SubResource("NavigationMesh_room")
+
+[node name="Floor" type="StaticBody3D" parent="NavigationRegion3D"]
+
+[node name="FloorMesh" type="MeshInstance3D" parent="NavigationRegion3D/Floor"]
+mesh = SubResource("PlaneMesh_floor")
+surface_material_override/0 = SubResource("Material_floor")
+
+[node name="FloorCollision" type="CollisionShape3D" parent="NavigationRegion3D/Floor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0)
+shape = SubResource("BoxShape_floor")
+
+[node name="WallNorth" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, -12)
+
+[node name="WallNorthMesh" type="MeshInstance3D" parent="NavigationRegion3D/WallNorth"]
+mesh = SubResource("BoxMesh_wall")
+surface_material_override/0 = SubResource("Material_wall")
+
+[node name="WallNorthCollision" type="CollisionShape3D" parent="NavigationRegion3D/WallNorth"]
+shape = SubResource("BoxShape_wall")
+
+[node name="WallSouth" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 12)
+
+[node name="WallSouthMesh" type="MeshInstance3D" parent="NavigationRegion3D/WallSouth"]
+mesh = SubResource("BoxMesh_wall")
+surface_material_override/0 = SubResource("Material_wall")
+
+[node name="WallSouthCollision" type="CollisionShape3D" parent="NavigationRegion3D/WallSouth"]
+shape = SubResource("BoxShape_wall")
+
+[node name="WallEast" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 12, 2.5, 0)
+
+[node name="WallEastMesh" type="MeshInstance3D" parent="NavigationRegion3D/WallEast"]
+mesh = SubResource("BoxMesh_wall")
+surface_material_override/0 = SubResource("Material_wall")
+
+[node name="WallEastCollision" type="CollisionShape3D" parent="NavigationRegion3D/WallEast"]
+shape = SubResource("BoxShape_wall")
+
+[node name="WallWest" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -12, 2.5, 0)
+
+[node name="WallWestMesh" type="MeshInstance3D" parent="NavigationRegion3D/WallWest"]
+mesh = SubResource("BoxMesh_wall")
+surface_material_override/0 = SubResource("Material_wall")
+
+[node name="WallWestCollision" type="CollisionShape3D" parent="NavigationRegion3D/WallWest"]
+shape = SubResource("BoxShape_wall")
+
+[node name="RoomManager" type="Node" parent="."]
+script = ExtResource("2_roommanager")
+
+[node name="Player" parent="." instance=ExtResource("1_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 4)
+
+[node name="ChestLeft" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0.5, -5)
+
+[node name="ChestMesh" type="MeshInstance3D" parent="ChestLeft"]
+mesh = SubResource("CapsuleMesh_chest")
+surface_material_override/0 = SubResource("Material_chest")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="ChestCollision" type="CollisionShape3D" parent="ChestLeft"]
+shape = SubResource("CapsuleShape_chest")
+
+[node name="InteractArea" type="Area3D" parent="ChestLeft"]
+
+[node name="InteractCollision" type="CollisionShape3D" parent="ChestLeft/InteractArea"]
+shape = SubResource("SphereShape_interact")
+
+[node name="Label3D" type="Label3D" parent="ChestLeft"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, 0)
+text = "✦ 宝箱 ✦
+[按 F 开启]"
+font_size = 48
+billboard = 1
+modulate = Color(1, 0.85, 0.3, 1)
+
+[node name="ChestRight" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0.5, -5)
+
+[node name="ChestMesh" type="MeshInstance3D" parent="ChestRight"]
+mesh = SubResource("CapsuleMesh_chest")
+surface_material_override/0 = SubResource("Material_chest")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="ChestCollision" type="CollisionShape3D" parent="ChestRight"]
+shape = SubResource("CapsuleShape_chest")
+
+[node name="InteractArea" type="Area3D" parent="ChestRight"]
+
+[node name="InteractCollision" type="CollisionShape3D" parent="ChestRight/InteractArea"]
+shape = SubResource("SphereShape_interact")
+
+[node name="Label3D" type="Label3D" parent="ChestRight"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, 0)
+text = "✦ 宝箱 ✦
+[按 F 开启]"
+font_size = 48
+billboard = 1
+modulate = Color(1, 0.85, 0.3, 1)
