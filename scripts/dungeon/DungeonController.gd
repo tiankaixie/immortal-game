@@ -183,6 +183,7 @@ func _on_room_cleared() -> void:
 	if is_transitioning:
 		return
 
+	RunStats.rooms_cleared += 1
 	print("[DungeonController] Room %d/%d cleared" % [current_room_number, MAX_ROOMS])
 
 	# Show boon selection UI first (it will call _on_boon_selected when done)

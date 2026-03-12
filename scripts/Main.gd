@@ -23,6 +23,9 @@ func _ready() -> void:
 	# Set game state
 	GameManager.change_state(GameManager.GameState.DUNGEON_RUN)
 
+	# Reset run stats for fresh run
+	RunStats.reset()
+
 	# Reset boon state for fresh run
 	BoonDatabase.reset_run()
 

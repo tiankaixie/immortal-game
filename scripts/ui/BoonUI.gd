@@ -187,6 +187,7 @@ func _on_boon_selected(boon_id: String) -> void:
 	"""Player selected a boon — apply it and close UI."""
 	AudioManager.play_sfx("level_up")
 	BoonDatabase.apply_boon(boon_id)
+	RunStats.boons_acquired += 1
 
 	var boon := BoonDatabase.get_boon_by_id(boon_id)
 	print("[BoonUI] Player chose: %s (%s)" % [boon.get("name_zh", boon_id), boon_id])

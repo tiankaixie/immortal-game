@@ -270,7 +270,31 @@ func _find_nearest_enemy() -> Node:
 				nearest = enemy
 	return nearest
 
+var _death_triggered: bool = false
+const DEATH_SCREEN_PATH: String = "res://scenes/ui/DeathScreen.tscn"
+
+func _goto_death_screen() -> void:
+	GameManager.goto_scene(DEATH_SCREEN_PATH)
+
 func _on_death() -> void:
+	if _death_triggered:
+		return
+	_death_triggered = true
 	died.emit()
 	print("[Player] Defeated!")
-	# TODO: Trigger death animation, end run
+
+	# Darken screen then transition to DeathScreen
+	var death_canvas := CanvasLayer.new()
+	death_canvas.layer = 90
+	add_child(death_canvas)
+
+	var dark_rect := ColorRect.new()
+	dark_rect.color = Color(0, 0, 0, 0)
+	dark_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dark_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	death_canvas.add_child(dark_rect)
+
+	var tween := create_tween()
+	tween.tween_property(dark_rect, "color:a", 0.8, 0.5)
+	tween.tween_interval(0.3)
+	tween.tween_callback(_goto_death_screen)

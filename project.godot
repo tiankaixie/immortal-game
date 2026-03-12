@@ -25,6 +25,7 @@ LootTable="*res://scripts/systems/LootTable.gd"
 BoonDatabase="*res://scripts/systems/BoonDatabase.gd"
 TradeSystem="*res://scripts/systems/TradeSystem.gd"
 AudioManager="*res://scripts/core/AudioManager.gd"
+RunStats="*res://scripts/core/RunStats.gd"
 
 [display]
 

@@ -217,6 +217,8 @@ func _get_equipment_stat_bonus(stat_name: String) -> float:
 
 # ─── Economy ───────────────────────────────────────────────────
 func add_spirit_stones(amount: int) -> void:
+	if amount > 0:
+		RunStats.spirit_stones_collected += amount
 	spirit_stones += amount
 	spirit_stones_changed.emit(spirit_stones)
 

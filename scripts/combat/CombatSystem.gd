@@ -57,7 +57,12 @@ signal skill_used(skill_id: String)
 signal auto_battle_toggled(enabled: bool)
 
 func _ready() -> void:
+	damage_dealt.connect(_on_damage_dealt_stats)
 	print("[CombatSystem] Initialized")
+
+func _on_damage_dealt_stats(_target: Node, amount: float, _is_critical: bool) -> void:
+	"""Track total damage dealt for RunStats."""
+	RunStats.damage_dealt_total += int(amount)
 
 func _process(delta: float) -> void:
 	match current_state:
@@ -323,6 +328,9 @@ func execute_skill(skill_id: String, target: Node) -> void:
 	# Set cooldown
 	skill_cooldowns[skill_id] = skill["cooldown"]
 	
+	# Track skill usage
+	RunStats.skills_used += 1
+	
 	# Grant cultivation XP for using a skill
 	PlayerData.add_cultivation_xp(5.0)
 	
@@ -405,6 +413,7 @@ func on_enemy_defeated(enemy: Node) -> void:
 	"""Called when an enemy's HP reaches 0. Grants rewards."""
 	enemies.erase(enemy)
 	enemy_defeated.emit(enemy)
+	RunStats.enemies_killed += 1
 	
 	if current_target == enemy:
 		current_target = _find_nearest_enemy()
