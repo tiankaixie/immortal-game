@@ -107,6 +107,9 @@ func _ready() -> void:
 	# Create skill unlock notification overlay
 	_create_skill_unlock_notification()
 
+	# Apply spirit root color theme
+	apply_spirit_root_theme(PlayerData.spiritual_root)
+
 	print("[HUD] Ready")
 
 func _process(_delta: float) -> void:
@@ -181,6 +184,51 @@ func _update_realm_display() -> void:
 		var realm_name: String = REALM_NAMES.get(PlayerData.cultivation_realm, "???")
 		var stage_name: String = STAGE_NAMES.get(PlayerData.cultivation_stage, "???")
 		realm_label.text = "%s · %s" % [realm_name, stage_name]
+
+# ─── Spirit Root Theme ─────────────────────────────────────────
+const SPIRIT_ROOT_COLORS: Dictionary = {
+	PlayerData.SpiritualRoot.METAL: Color("C0C0FF"),   # 银蓝
+	PlayerData.SpiritualRoot.WOOD:  Color("44CC44"),   # 翠绿
+	PlayerData.SpiritualRoot.WATER: Color("4488FF"),   # 海蓝
+	PlayerData.SpiritualRoot.FIRE:  Color("FF6633"),   # 烈橙
+	PlayerData.SpiritualRoot.EARTH: Color("AA8844"),   # 土黄
+}
+const DEFAULT_HP_COLOR := Color("FF3333")
+
+func apply_spirit_root_theme(root: int) -> void:
+	"""Apply element color theme to HP bar, SP bar, and skill panel borders."""
+	var theme_color: Color = SPIRIT_ROOT_COLORS.get(root, DEFAULT_HP_COLOR)
+
+	# ── HP bar fill color ──
+	if hp_bar:
+		var hp_fill := StyleBoxFlat.new()
+		hp_fill.bg_color = theme_color
+		hp_fill.set_corner_radius_all(2)
+		hp_bar.add_theme_stylebox_override("fill", hp_fill)
+
+	# ── SP bar fill color (darkened 20%) ──
+	if sp_bar:
+		var sp_fill := StyleBoxFlat.new()
+		sp_fill.bg_color = theme_color.darkened(0.2)
+		sp_fill.set_corner_radius_all(2)
+		sp_bar.add_theme_stylebox_override("fill", sp_fill)
+
+	# ── Skill panel tile borders ──
+	_apply_theme_to_skill_tiles(theme_color)
+
+	print("[HUD] Applied spirit root theme: %s → %s" % [root, theme_color.to_html()])
+
+func _apply_theme_to_skill_tiles(theme_color: Color) -> void:
+	"""Update existing skill tile border colors to match the spirit root theme."""
+	for tile in skill_tiles:
+		if not is_instance_valid(tile):
+			continue
+		var style: StyleBoxFlat = tile.get_theme_stylebox("panel") as StyleBoxFlat
+		if style:
+			# Duplicate to avoid shared resource issues
+			var new_style := style.duplicate() as StyleBoxFlat
+			new_style.border_color = theme_color
+			tile.add_theme_stylebox_override("panel", new_style)
 
 # ─── Room Cleared Display ─────────────────────────────────────
 func show_room_cleared() -> void:
@@ -356,6 +404,10 @@ func refresh_skill_panel() -> void:
 		skill_tiles.append(tile)
 		cooldown_skill_ids.append(skill_id)
 		hotkey_index += 1
+
+	# Re-apply spirit root theme to new tiles
+	var theme_color: Color = SPIRIT_ROOT_COLORS.get(PlayerData.spiritual_root, DEFAULT_HP_COLOR)
+	_apply_theme_to_skill_tiles(theme_color)
 
 func _create_skill_tile(skill: Dictionary, hotkey: int) -> PanelContainer:
 	"""Create a single skill tile showing icon placeholder, name, SP cost, and hotkey."""
