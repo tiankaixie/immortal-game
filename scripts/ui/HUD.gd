@@ -68,6 +68,9 @@ const DropNotificationScene = preload("res://scenes/ui/DropNotification.tscn")
 var skill_unlock_notification: CanvasLayer = null
 const SkillUnlockNotificationScene = preload("res://scenes/ui/SkillUnlockNotification.tscn")
 
+# ─── Active Spirit Root Theme Color ──────────────────────────
+var _spirit_theme_color: Color = Color("FF3333")  # Updated in apply_spirit_root_theme()
+
 # ─── Boss HP Bar ──────────────────────────────────────────────
 var boss_bar_container: Control = null
 var boss_hp_bar: ProgressBar = null
@@ -196,8 +199,10 @@ const SPIRIT_ROOT_COLORS: Dictionary = {
 const DEFAULT_HP_COLOR := Color("FF3333")
 
 func apply_spirit_root_theme(root: int) -> void:
-	"""Apply element color theme to HP bar, SP bar, and skill panel borders."""
+	"""Apply element color theme to HP bar, SP bar, skill panel borders,
+	   boss HP bar border, and room labels."""
 	var theme_color: Color = SPIRIT_ROOT_COLORS.get(root, DEFAULT_HP_COLOR)
+	_spirit_theme_color = theme_color
 
 	# ── HP bar fill color ──
 	if hp_bar:
@@ -216,6 +221,12 @@ func apply_spirit_root_theme(root: int) -> void:
 	# ── Skill panel tile borders ──
 	_apply_theme_to_skill_tiles(theme_color)
 
+	# ── Boss HP bar border (if already created) ──
+	_apply_theme_to_boss_bar(theme_color)
+
+	# ── Room labels accent ──
+	_apply_theme_to_room_labels(theme_color)
+
 	print("[HUD] Applied spirit root theme: %s → %s" % [root, theme_color.to_html()])
 
 func _apply_theme_to_skill_tiles(theme_color: Color) -> void:
@@ -229,6 +240,35 @@ func _apply_theme_to_skill_tiles(theme_color: Color) -> void:
 			var new_style := style.duplicate() as StyleBoxFlat
 			new_style.border_color = theme_color
 			tile.add_theme_stylebox_override("panel", new_style)
+
+func _apply_theme_to_boss_bar(theme_color: Color) -> void:
+	"""Tint the boss HP bar border and bg to the spirit root color."""
+	if boss_hp_bar == null or not is_instance_valid(boss_hp_bar):
+		return
+	var bg_style := boss_hp_bar.get_theme_stylebox("background") as StyleBoxFlat
+	if bg_style:
+		var new_bg := bg_style.duplicate() as StyleBoxFlat
+		new_bg.border_color = theme_color.darkened(0.3)
+		boss_hp_bar.add_theme_stylebox_override("background", new_bg)
+	# Also tint boss_bar_container background label accent
+	if boss_name_label and is_instance_valid(boss_name_label):
+		# Blend default gold with theme color slightly (70% gold, 30% theme)
+		var blended := Color(1.0, 0.85, 0.3).lerp(theme_color, 0.3)
+		boss_name_label.add_theme_color_override("font_color", blended)
+
+func _apply_theme_to_room_labels(theme_color: Color) -> void:
+	"""Tint the room counter label with the spirit root color."""
+	if room_label and is_instance_valid(room_label):
+		# Blend the default purple-white with theme color
+		var blended := Color(0.8, 0.7, 1.0).lerp(theme_color, 0.4)
+		room_label.add_theme_color_override("font_color", blended)
+	# room_type_label keeps its per-type colors for readability (elite/boss/treasure),
+	# but for the default "普通间" case, use a softened theme tint
+	if room_type_label and is_instance_valid(room_type_label):
+		var soft := theme_color.lightened(0.3)
+		soft.a = 0.85
+		room_type_label.add_theme_color_override("font_color", soft)
+		# Override back to type-specific colors each time update_room_type_display is called
 
 # ─── Room Cleared Display ─────────────────────────────────────
 func show_room_cleared() -> void:
@@ -293,10 +333,11 @@ func update_room_display(room: int, total: int) -> void:
 		room_label.text = "第 %d/%d 间" % [room, total]
 
 func update_room_type_display(room_type_name: String) -> void:
-	"""Update the room type label text and color."""
+	"""Update the room type label text and color.
+	   Special room types keep distinct colors; normal rooms use spirit root tint."""
 	if room_type_label:
 		room_type_label.text = "— %s —" % room_type_name
-		# Color coding
+		# Color coding: special rooms override theme; normal room uses theme tint
 		match room_type_name:
 			"精英间":
 				room_type_label.add_theme_color_override("font_color", Color(1.0, 0.5, 0.2))
@@ -305,7 +346,10 @@ func update_room_type_display(room_type_name: String) -> void:
 			"BOSS间":
 				room_type_label.add_theme_color_override("font_color", Color(0.9, 0.2, 0.2))
 			_:
-				room_type_label.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
+				# Normal/Ambush rooms: spirit root color, softened
+				var soft := _spirit_theme_color.lightened(0.3)
+				soft.a = 0.85
+				room_type_label.add_theme_color_override("font_color", soft)
 
 # ─── Spirit Stones Display ────────────────────────────────────
 func _create_stones_label() -> void:
@@ -634,6 +678,9 @@ func _create_boss_hp_bar() -> void:
 	boss_hp_label.add_theme_font_size_override("font_size", 14)
 	boss_hp_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0))
 	boss_bar_container.add_child(boss_hp_label)
+
+	# Apply current spirit root theme to newly-created bar
+	_apply_theme_to_boss_bar(_spirit_theme_color)
 
 func _on_boss_hp_changed(current: float, maximum: float) -> void:
 	"""Update boss HP bar with smooth tween animation."""
