@@ -7,9 +7,21 @@ extends CanvasLayer
 signal boon_chosen(boon_id: String)
 
 var boon_options: Array[Dictionary] = []
+var _spirit_root_color: Color = Color(0.7, 0.7, 0.9)  # Default fallback
+
+# Spirit root color mapping (matches HUD.gd)
+const SPIRIT_ROOT_COLORS: Dictionary = {
+	0: Color(0.75, 0.75, 1.0),   # METAL — 银蓝
+	1: Color(0.27, 0.80, 0.27),  # WOOD — 翠绿
+	2: Color(0.27, 0.53, 1.0),   # WATER — 海蓝
+	3: Color(1.0,  0.40, 0.20),  # FIRE — 烈橙
+	4: Color(0.67, 0.53, 0.27),  # EARTH — 土黄
+}
 
 func _ready() -> void:
 	layer = 18
+	# Read player's spirit root color
+	_spirit_root_color = SPIRIT_ROOT_COLORS.get(PlayerData.spiritual_root, Color(0.7, 0.7, 0.9))
 	boon_options = BoonDatabase.get_random_boons(3)
 	_build_ui()
 
@@ -71,19 +83,29 @@ func _create_boon_card(boon: Dictionary, index: int) -> PanelContainer:
 	var panel := PanelContainer.new()
 	panel.custom_minimum_size = Vector2(280, 360)
 
-	# Style the panel
+	# Style the panel — blend quality color with spirit root color (25%)
 	var style := StyleBoxFlat.new()
 	var rarity: int = boon.get("rarity", 0)
+	var base_bg: Color
+	var base_border: Color
 	match rarity:
 		0:  # Common — dark blue
-			style.bg_color = Color(0.08, 0.08, 0.18, 0.95)
-			style.border_color = Color(0.3, 0.3, 0.6)
+			base_bg = Color(0.08, 0.08, 0.18, 0.95)
+			base_border = Color(0.3, 0.3, 0.6)
 		1:  # Rare — purple
-			style.bg_color = Color(0.12, 0.05, 0.2, 0.95)
-			style.border_color = Color(0.6, 0.3, 0.8)
+			base_bg = Color(0.12, 0.05, 0.2, 0.95)
+			base_border = Color(0.6, 0.3, 0.8)
 		2:  # Legendary — gold
-			style.bg_color = Color(0.15, 0.1, 0.02, 0.95)
-			style.border_color = Color(0.9, 0.7, 0.2)
+			base_bg = Color(0.15, 0.1, 0.02, 0.95)
+			base_border = Color(0.9, 0.7, 0.2)
+		_:
+			base_bg = Color(0.08, 0.08, 0.18, 0.95)
+			base_border = Color(0.3, 0.3, 0.6)
+	# Mix spirit root color into background (25%) and border (20%)
+	var spirit_bg := _spirit_root_color.darkened(0.7)  # Darken spirit color to keep card dark
+	style.bg_color = base_bg.lerp(spirit_bg, 0.25)
+	style.bg_color.a = 0.95
+	style.border_color = base_border.lerp(_spirit_root_color, 0.2)
 	style.border_width_left = 2
 	style.border_width_right = 2
 	style.border_width_top = 2
@@ -127,7 +149,9 @@ func _create_boon_card(boon: Dictionary, index: int) -> PanelContainer:
 	vbox.add_child(en_label)
 
 	var sep := HSeparator.new()
-	sep.add_theme_color_override("separator", Color(0.3, 0.3, 0.5, 0.5))
+	var sep_color := Color(0.3, 0.3, 0.5, 0.5).lerp(_spirit_root_color, 0.3)
+	sep_color.a = 0.5
+	sep.add_theme_color_override("separator", sep_color)
 	vbox.add_child(sep)
 
 	# Description
