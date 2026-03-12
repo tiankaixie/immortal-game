@@ -173,6 +173,11 @@ func _connect_room_manager() -> void:
 	room_number_changed.emit(current_room_number, MAX_ROOMS)
 	room_type_changed.emit(current_room_type, ROOM_TYPE_NAMES.get(current_room_type, "普通间"))
 
+	# Initialize dungeon progress bar on HUD
+	var hud_init := main.find_child("HUD", true, false)
+	if hud_init and hud_init.has_method("update_dungeon_progress"):
+		hud_init.update_dungeon_progress(current_room_number, MAX_ROOMS)
+
 func _on_room_cleared() -> void:
 	"""Room cleared — show boon selection, then next-room prompt."""
 	if is_transitioning:
@@ -359,6 +364,11 @@ func _swap_room() -> void:
 	current_room_type = _determine_room_type(current_room_number)
 	room_number_changed.emit(current_room_number, MAX_ROOMS)
 	room_type_changed.emit(current_room_type, ROOM_TYPE_NAMES.get(current_room_type, "普通间"))
+
+	# Update dungeon progress bar on HUD
+	var hud_ref := main.find_child("HUD", true, false)
+	if hud_ref and hud_ref.has_method("update_dungeon_progress"):
+		hud_ref.update_dungeon_progress(current_room_number, MAX_ROOMS)
 
 	# Spawn treasure chest in treasure rooms (only if not using TreasureVault scene which has built-in chests)
 	if current_room_type == RoomType.TREASURE and room_path != TREASURE_VAULT_SCENE_PATH:

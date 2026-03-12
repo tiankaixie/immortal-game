@@ -40,6 +40,12 @@ const STAGE_NAMES: Dictionary = {
 var room_label: Label = null
 var room_type_label: Label = null
 
+# Dungeon progress bar (top-center)
+var dungeon_progress_container: Control = null
+var dungeon_progress_bg: ColorRect = null
+var dungeon_progress_fill: ColorRect = null
+var dungeon_progress_label: Label = null
+
 # Skill panel (created dynamically)
 var skill_panel_container: HBoxContainer = null
 var skill_tiles: Array[PanelContainer] = []
@@ -97,6 +103,9 @@ func _ready() -> void:
 
 	# Create room counter label
 	_create_room_label()
+
+	# Create dungeon progress bar at top-center
+	_create_dungeon_progress_bar()
 
 	# Create skill panel at bottom-center
 	_create_skill_panel()
@@ -227,6 +236,9 @@ func apply_spirit_root_theme(root: int) -> void:
 	# ── Room labels accent ──
 	_apply_theme_to_room_labels(theme_color)
 
+	# ── Dungeon progress bar fill ──
+	_apply_theme_to_dungeon_progress(theme_color)
+
 	print("[HUD] Applied spirit root theme: %s → %s" % [root, theme_color.to_html()])
 
 func _apply_theme_to_skill_tiles(theme_color: Color) -> void:
@@ -269,6 +281,76 @@ func _apply_theme_to_room_labels(theme_color: Color) -> void:
 		soft.a = 0.85
 		room_type_label.add_theme_color_override("font_color", soft)
 		# Override back to type-specific colors each time update_room_type_display is called
+
+# ─── Dungeon Progress Bar ──────────────────────────────────────
+func _create_dungeon_progress_bar() -> void:
+	"""Create a thin progress bar at top-center showing dungeon room progression."""
+	dungeon_progress_container = Control.new()
+	dungeon_progress_container.name = "DungeonProgressBar"
+	dungeon_progress_container.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	dungeon_progress_container.anchor_left = 0.5
+	dungeon_progress_container.anchor_right = 0.5
+	dungeon_progress_container.anchor_top = 0.0
+	dungeon_progress_container.anchor_bottom = 0.0
+	dungeon_progress_container.offset_left = -300
+	dungeon_progress_container.offset_right = 300
+	dungeon_progress_container.offset_top = 6
+	dungeon_progress_container.offset_bottom = 26  # 8px bar + label space
+	dungeon_progress_container.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	add_child(dungeon_progress_container)
+
+	# Background track (semi-transparent dark)
+	dungeon_progress_bg = ColorRect.new()
+	dungeon_progress_bg.color = Color(0.1, 0.08, 0.15, 0.5)
+	dungeon_progress_bg.position = Vector2(0, 0)
+	dungeon_progress_bg.size = Vector2(600, 8)
+	dungeon_progress_container.add_child(dungeon_progress_bg)
+
+	# Fill bar (spirit root color, starts at 1/5)
+	dungeon_progress_fill = ColorRect.new()
+	dungeon_progress_fill.color = _spirit_theme_color
+	dungeon_progress_fill.position = Vector2(0, 0)
+	dungeon_progress_fill.size = Vector2(120, 8)  # 1/5 of 600
+	dungeon_progress_container.add_child(dungeon_progress_fill)
+
+	# Small label below the bar
+	dungeon_progress_label = Label.new()
+	dungeon_progress_label.text = "1 / 5"
+	dungeon_progress_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	dungeon_progress_label.position = Vector2(0, 9)
+	dungeon_progress_label.size = Vector2(600, 14)
+	dungeon_progress_label.add_theme_font_size_override("font_size", 11)
+	dungeon_progress_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.8, 0.7))
+	dungeon_progress_container.add_child(dungeon_progress_label)
+
+func update_dungeon_progress(current: int, total: int) -> void:
+	"""Update the dungeon progress bar with smooth tween animation."""
+	if dungeon_progress_fill == null or dungeon_progress_bg == null:
+		return
+
+	var bar_width: float = dungeon_progress_bg.size.x
+	var target_width: float = bar_width * (float(current) / float(total))
+
+	# Tween the fill width smoothly
+	var tween := create_tween()
+	tween.tween_property(dungeon_progress_fill, "size:x", target_width, 0.4) \
+		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+
+	# Update label
+	if dungeon_progress_label:
+		dungeon_progress_label.text = "%d / %d" % [current, total]
+
+	# Brief glow effect on the fill color
+	var original_color: Color = _spirit_theme_color
+	var bright_color: Color = original_color.lightened(0.4)
+	dungeon_progress_fill.color = bright_color
+	var color_tween := create_tween()
+	color_tween.tween_property(dungeon_progress_fill, "color", original_color, 0.6)
+
+func _apply_theme_to_dungeon_progress(theme_color: Color) -> void:
+	"""Update dungeon progress bar fill color to match spirit root theme."""
+	if dungeon_progress_fill and is_instance_valid(dungeon_progress_fill):
+		dungeon_progress_fill.color = theme_color
 
 # ─── Room Cleared Display ─────────────────────────────────────
 func show_room_cleared() -> void:
