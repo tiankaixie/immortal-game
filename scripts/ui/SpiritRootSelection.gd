@@ -69,6 +69,10 @@ var _card_borders: Array[ColorRect] = []
 var _confirm_btn: Button
 var _back_btn: Button
 
+# ─── Particle FX ──────────────────────────────────────────────
+var _hover_particles: Array[GPUParticles2D] = []
+var _burst_particles: Array[GPUParticles2D] = []
+
 func _ready() -> void:
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	_build_ui()
@@ -118,6 +122,22 @@ func _build_ui() -> void:
 		card.position = Vector2(i * (CARD_WIDTH + CARD_GAP), 0)
 		cards_container.add_child(card)
 		_cards.append(card)
+
+		# Create hover + burst particles for each card
+		var elem_color: Color = ROOT_DATA[i]["color"]
+		var card_center := card.position + Vector2(CARD_WIDTH / 2.0, CARD_HEIGHT / 2.0)
+
+		var hover_p := _create_element_particles(elem_color, 20, 1.0, false)
+		hover_p.position = card_center
+		hover_p.emitting = false
+		cards_container.add_child(hover_p)
+		_hover_particles.append(hover_p)
+
+		var burst_p := _create_element_particles(elem_color, 60, 0.8, true)
+		burst_p.position = card_center
+		burst_p.emitting = false
+		cards_container.add_child(burst_p)
+		_burst_particles.append(burst_p)
 
 	# ── Bottom buttons container ──
 	var btn_container := HBoxContainer.new()
@@ -259,10 +279,16 @@ func _on_card_hover(index: int, entering: bool) -> void:
 		tween.tween_property(card, "scale", Vector2(1.05, 1.05), 0.15).set_ease(Tween.EASE_OUT)
 		if index != _selected_index:
 			_card_borders[index].color = Color(0.4, 0.3, 0.6, 0.8)
+		# Start hover particles
+		if index < _hover_particles.size():
+			_hover_particles[index].emitting = true
 	else:
 		tween.tween_property(card, "scale", Vector2(1.0, 1.0), 0.15).set_ease(Tween.EASE_OUT)
 		if index != _selected_index:
 			_card_borders[index].color = Color(0.2, 0.15, 0.3, 0.6)
+		# Stop hover particles
+		if index < _hover_particles.size():
+			_hover_particles[index].emitting = false
 
 func _on_card_input(event: InputEvent, index: int) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
@@ -282,6 +308,11 @@ func _select_card(index: int) -> void:
 	# Show confirm button
 	_confirm_btn.visible = true
 	_confirm_btn.text = "确认 · %s" % data["name"]
+
+	# Trigger burst particles on selection
+	if index < _burst_particles.size():
+		_burst_particles[index].restart()
+		_burst_particles[index].emitting = true
 
 	print("[SpiritRootSelection] Selected: %s" % data["name"])
 
@@ -322,3 +353,58 @@ func _on_confirm() -> void:
 
 	print("[SpiritRootSelection] Confirmed: %s — starting game" % data["name"])
 	GameManager.goto_scene("res://scenes/Main.tscn")
+
+# ─── Particle FX Helpers ─────────────────────────────────────
+func _create_element_particles(elem_color: Color, amount: int, lifetime: float, one_shot: bool) -> GPUParticles2D:
+	"""Create a GPUParticles2D node with element-colored particles and additive blending."""
+	var particles := GPUParticles2D.new()
+	particles.amount = amount
+	particles.lifetime = lifetime
+	particles.one_shot = one_shot
+	particles.explosiveness = 0.9 if one_shot else 0.05
+	particles.z_index = 10
+
+	# Additive glow material
+	var canvas_mat := CanvasItemMaterial.new()
+	canvas_mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	particles.material = canvas_mat
+
+	# Process material for particle behavior
+	var mat := ParticleProcessMaterial.new()
+	mat.direction = Vector3(0, -1, 0)
+	mat.spread = 180.0
+	mat.initial_velocity_min = 30.0
+	mat.initial_velocity_max = 80.0 if one_shot else 40.0
+	mat.gravity = Vector3(0, 20, 0)
+	mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	mat.emission_sphere_radius = 40.0 if one_shot else 25.0
+
+	# Scale
+	mat.scale_min = 2.0
+	mat.scale_max = 5.0
+
+	# Color gradient: element color → faded
+	var color_ramp := Gradient.new()
+	var bright := elem_color
+	bright.a = 1.0
+	var mid := elem_color
+	mid.a = 0.7
+	var faded := elem_color
+	faded.a = 0.0
+	color_ramp.set_offset(0, 0.0)
+	color_ramp.set_color(0, bright)
+	color_ramp.add_point(0.5, mid)
+	color_ramp.set_offset(2, 1.0)
+	color_ramp.set_color(2, faded)
+
+	var gradient_tex := GradientTexture1D.new()
+	gradient_tex.gradient = color_ramp
+	mat.color_ramp = gradient_tex
+
+	# Damping to slow particles
+	mat.damping_min = 10.0
+	mat.damping_max = 30.0
+
+	particles.process_material = mat
+
+	return particles
