@@ -191,14 +191,32 @@ func get_total_hp() -> float:
 func get_total_attack() -> float:
 	var realm_multiplier := 1.0 + (cultivation_realm * 0.2)
 	var equip_bonus := _get_equipment_stat_bonus("attack")
-	var root_bonus := 1.1 if spiritual_root == SpiritualRoot.METAL else 1.0
+	var root_bonus := 1.0
+	match spiritual_root:
+		SpiritualRoot.METAL:     root_bonus = 1.10  # 金 — 斩击加成
+		SpiritualRoot.FIRE:      root_bonus = 1.05  # 火 — AoE 爆发
+		SpiritualRoot.LIGHTNING: root_bonus = 1.08  # 雷 — 暴击/速攻
+		SpiritualRoot.VOID:      root_bonus = 1.12  # 虚 — 暗杀高爆
 	return base_attack * realm_multiplier * root_bonus + equip_bonus
 
 func get_total_defense() -> float:
 	var realm_multiplier := 1.0 + (cultivation_realm * 0.2)
 	var equip_bonus := _get_equipment_stat_bonus("defense")
-	var root_bonus := 1.1 if spiritual_root == SpiritualRoot.WATER else 1.0
+	var root_bonus := 1.0
+	match spiritual_root:
+		SpiritualRoot.WATER: root_bonus = 1.10  # 水 — 防御加成
+		SpiritualRoot.EARTH: root_bonus = 1.08  # 土 — 厚重防御
 	return base_defense * realm_multiplier * root_bonus + equip_bonus
+
+func get_speed_multiplier() -> float:
+	"""Return a movement speed multiplier based on spiritual root.
+	Applied by Player.gd when computing actual move speed.
+	"""
+	match spiritual_root:
+		SpiritualRoot.LIGHTNING: return 1.20  # 雷 — 极速
+		SpiritualRoot.VOID:      return 1.10  # 虚 — 轻灵
+		SpiritualRoot.WOOD:      return 1.05  # 木 — 稳健
+	return 1.0
 
 func get_total_sp_max() -> float:
 	"""Calculate total max SP from base + equipment + realm modifier."""

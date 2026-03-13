@@ -643,7 +643,8 @@ func _drop_boss_loot() -> void:
 	PlayerData.add_spirit_stones(stones)
 
 	if GameManager.has_method("grant_random_equipment"):
-		GameManager.grant_random_equipment()
+		var _equip := GameManager.grant_random_equipment()
+		PlayerData.add_to_inventory(_equip)
 
 # ─── HP Label Override ─────────────────────────────────────────
 func _update_hp_label() -> void:

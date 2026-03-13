@@ -393,6 +393,18 @@ func _show_dungeon_complete() -> void:
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	dungeon_completed.emit()
 
+	# ── 劫难模式通关奖励 ──────────────────────────────────────
+	var hard_mode_bonus_stones: int = 0
+	var hard_mode_equipment: Dictionary = {}
+	if GameManager.hard_mode:
+		hard_mode_bonus_stones = randi_range(60, 100)
+		PlayerData.add_spirit_stones(hard_mode_bonus_stones)
+		# Grant a guaranteed high-luck equipment with 3.5x luck modifier
+		hard_mode_equipment = GameManager.grant_random_equipment(3.5)
+		if not hard_mode_equipment.is_empty():
+			PlayerData.add_to_inventory(hard_mode_equipment)
+		print("[DungeonController] 劫难模式通关奖励: +%d 灵石 + 稀有装备" % hard_mode_bonus_stones)
+
 	var canvas := CanvasLayer.new()
 	canvas.layer = 20
 	add_child(canvas)
@@ -405,19 +417,24 @@ func _show_dungeon_complete() -> void:
 	var vbox := VBoxContainer.new()
 	vbox.set_anchors_preset(Control.PRESET_CENTER)
 	vbox.anchor_left = 0.5
-	vbox.anchor_top = 0.35
+	vbox.anchor_top = 0.3
 	vbox.anchor_right = 0.5
-	vbox.anchor_bottom = 0.65
+	vbox.anchor_bottom = 0.7
 	vbox.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	vbox.grow_vertical = Control.GROW_DIRECTION_BOTH
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	canvas.add_child(vbox)
 
+	# Title — different for hard mode
 	var title := Label.new()
-	title.text = "✦ 副本完成！✦"
+	if GameManager.hard_mode:
+		title.text = "⚡ 劫难已渡！副本完成！⚡"
+		title.add_theme_color_override("font_color", Color(1.0, 0.6, 0.1))
+	else:
+		title.text = "✦ 副本完成！✦"
+		title.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 48)
-	title.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
 	vbox.add_child(title)
 
 	var spacer := Control.new()
@@ -425,15 +442,60 @@ func _show_dungeon_complete() -> void:
 	vbox.add_child(spacer)
 
 	var stats := Label.new()
+	var realm_names := ["练气期", "筑基期", "结丹期", "元婴期", "化神期", "炼虚期", "合体期", "大乘期", "渡劫期"]
+	var stage_names := ["初期", "中期", "后期", "巅峰"]
+	var realm_str: String = realm_names[PlayerData.cultivation_realm] if PlayerData.cultivation_realm < realm_names.size() else str(PlayerData.cultivation_realm)
+	var stage_str: String = stage_names[PlayerData.cultivation_stage] if PlayerData.cultivation_stage < stage_names.size() else str(PlayerData.cultivation_stage)
 	stats.text = "灵石获得: %d\n修为增长: %s · %s" % [
 		GameManager.run_spirit_stones,
-		"练气期" if PlayerData.cultivation_realm == 0 else str(PlayerData.cultivation_realm),
-		"初期" if PlayerData.cultivation_stage == 0 else str(PlayerData.cultivation_stage),
+		realm_str,
+		stage_str,
 	]
 	stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	stats.add_theme_font_size_override("font_size", 22)
 	stats.add_theme_color_override("font_color", Color(0.8, 0.8, 1.0))
 	vbox.add_child(stats)
+
+	# Hard mode bonus display
+	if GameManager.hard_mode and hard_mode_bonus_stones > 0:
+		var hard_spacer := Control.new()
+		hard_spacer.custom_minimum_size = Vector2(0, 12)
+		vbox.add_child(hard_spacer)
+
+		var hard_panel := PanelContainer.new()
+		var hard_style := StyleBoxFlat.new()
+		hard_style.bg_color = Color(0.3, 0.1, 0.0, 0.85)
+		hard_style.border_color = Color(1.0, 0.5, 0.1)
+		hard_style.set_border_width_all(2)
+		hard_style.set_corner_radius_all(6)
+		hard_panel.add_theme_stylebox_override("panel", hard_style)
+		vbox.add_child(hard_panel)
+
+		var hard_vbox := VBoxContainer.new()
+		hard_vbox.custom_minimum_size = Vector2(340, 0)
+		hard_panel.add_child(hard_vbox)
+
+		var hard_title := Label.new()
+		hard_title.text = "⚡ 劫难通关奖励"
+		hard_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		hard_title.add_theme_font_size_override("font_size", 18)
+		hard_title.add_theme_color_override("font_color", Color(1.0, 0.6, 0.1))
+		hard_vbox.add_child(hard_title)
+
+		var hard_stones := Label.new()
+		hard_stones.text = "灵石奖励: +%d 灵石" % hard_mode_bonus_stones
+		hard_stones.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		hard_stones.add_theme_font_size_override("font_size", 16)
+		hard_stones.add_theme_color_override("font_color", Color(1.0, 0.9, 0.3))
+		hard_vbox.add_child(hard_stones)
+
+		if not hard_mode_equipment.is_empty():
+			var equip_label := Label.new()
+			equip_label.text = "稀有装备: %s" % hard_mode_equipment.get("name", "神秘装备")
+			equip_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			equip_label.add_theme_font_size_override("font_size", 16)
+			equip_label.add_theme_color_override("font_color", Color(0.8, 0.5, 1.0))
+			hard_vbox.add_child(equip_label)
 
 	var spacer2 := Control.new()
 	spacer2.custom_minimum_size = Vector2(0, 30)

@@ -473,7 +473,8 @@ func _drop_boss_loot() -> void:
 
 	# Guaranteed equipment drop (random from available pool)
 	if GameManager.has_method("grant_random_equipment"):
-		GameManager.grant_random_equipment()
+		var _equip := GameManager.grant_random_equipment()
+		PlayerData.add_to_inventory(_equip)
 		print("[BossEnemy] Dropped random equipment")
 	else:
 		# Fallback: just give extra spirit stones if no equipment system

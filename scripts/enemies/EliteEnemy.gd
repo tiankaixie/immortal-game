@@ -399,7 +399,8 @@ func _drop_elite_loot() -> void:
 	# 50% chance equipment drop
 	if randf() < 0.5:
 		if GameManager.has_method("grant_random_equipment"):
-			GameManager.grant_random_equipment()
+			var _equip := GameManager.grant_random_equipment()
+		PlayerData.add_to_inventory(_equip)
 			print("[EliteEnemy] Dropped random equipment")
 		else:
 			var bonus := randi_range(10, 20)

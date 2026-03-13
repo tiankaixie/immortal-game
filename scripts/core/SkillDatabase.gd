@@ -128,6 +128,70 @@ func _register_all_skills() -> void:
 		"unlock_realm": 3,
 	})
 
+	# ─── 雷灵根专属技能 ───────────────────────────────────────
+	_register({
+		"id": "thunder_palm",
+		"name_zh": "天雷掌",
+		"name_en": "Thunder Palm",
+		"sp_cost": 14.0,
+		"cooldown": 4.0,
+		"damage_multiplier": 1.9,
+		"range": 8.0,
+		"aoe_radius": 0.0,
+		"element": "lightning",
+		"effect": "stun",
+		"effect_duration": 2.0,
+		"description": "雷掌劈出，凝天雷于掌心轰击单敌，强烈电流麻痹敌人2秒。雷灵根入门术。",
+		"unlock_realm": 0,
+	})
+
+	_register({
+		"id": "chain_lightning",
+		"name_zh": "锁链雷",
+		"name_en": "Chain Lightning",
+		"sp_cost": 22.0,
+		"cooldown": 6.5,
+		"damage_multiplier": 1.4,
+		"range": 12.0,
+		"aoe_radius": -1.0,  # Special: chain logic (negative = chain mode)
+		"chain_count": 3,    # Number of targets to chain to
+		"element": "lightning",
+		"description": "雷弧在敌群间跳跃传导，最多连锁3个目标，每跳伤害不减。筑基期方可修炼。",
+		"unlock_realm": 1,
+	})
+
+	# ─── 虚灵根专属技能 ───────────────────────────────────────
+	_register({
+		"id": "void_blink",
+		"name_zh": "虚影步",
+		"name_en": "Void Blink",
+		"sp_cost": 18.0,
+		"cooldown": 5.0,
+		"damage_multiplier": 2.5,
+		"range": 15.0,
+		"aoe_radius": 0.0,
+		"element": "void",
+		"effect": "blink",
+		"description": "撕裂虚空瞬移至目标身后，借空间之力重击敌人，造成高额伤害。虚灵根入门术。",
+		"unlock_realm": 0,
+	})
+
+	_register({
+		"id": "void_drain",
+		"name_zh": "虚空吸髓",
+		"name_en": "Void Drain",
+		"sp_cost": 20.0,
+		"cooldown": 8.0,
+		"damage_multiplier": 1.5,
+		"range": 10.0,
+		"aoe_radius": 0.0,
+		"element": "void",
+		"effect": "lifesteal",
+		"lifesteal_ratio": 0.6,
+		"description": "以虚空之力抽取目标生命精华，造成伤害的60%转化为自身气血。筑基期方可修炼。",
+		"unlock_realm": 1,
+	})
+
 func _register(skill: Dictionary) -> void:
 	"""Add a skill to the registry."""
 	_skills[skill["id"]] = skill
@@ -172,9 +236,9 @@ func get_starter_skills(root: int) -> Array[String]:
 		PlayerData.SpiritualRoot.EARTH:
 			return ["metal_edge", "frost_slash"]
 		PlayerData.SpiritualRoot.LIGHTNING:
-			return ["fire_bolt", "frost_slash"]
+			return ["thunder_palm", "chain_lightning"]
 		PlayerData.SpiritualRoot.VOID:
-			return ["metal_edge", "fire_bolt"]
+			return ["void_blink", "void_drain"]
 		_:
 			return ["fire_bolt", "frost_slash"]
 

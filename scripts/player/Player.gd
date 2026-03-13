@@ -140,9 +140,10 @@ func _process_movement(delta: float) -> void:
 
 	var move_dir := (forward * -input_dir.y + right * input_dir.x)
 
-	# Sprint check
+	# Sprint check — scale by spiritual root speed bonus
 	var is_sprinting := Input.is_action_pressed("sprint") and move_dir.length() > 0.1
-	var speed := RUN_SPEED if is_sprinting else WALK_SPEED
+	var root_speed := PlayerData.get_speed_multiplier()
+	var speed := (RUN_SPEED if is_sprinting else WALK_SPEED) * root_speed
 
 	if move_dir.length() > 0.1:
 		velocity.x = move_dir.x * speed

@@ -71,8 +71,8 @@ const ROOT_DATA := [
 		"char": "雷",
 		"name": "雷灵根",
 		"element": "雷系 · Thunder",
-		"bonus": "攻击附带麻痹效果",
-		"skill": "起始技能：雷霆斩",
+		"bonus": "攻击+8% · 移速+20% · 麻痹技能",
+		"skill": "起始技能：天雷掌 · 锁链雷",
 		"color": Color(0.6, 0.4, 1.0),         # #9966FF
 		"color_hex": "#9966FF",
 		"unlock_id": "spirit_root_thunder",
@@ -82,8 +82,8 @@ const ROOT_DATA := [
 		"char": "虚",
 		"name": "虚灵根",
 		"element": "虚系 · Void",
-		"bonus": "概率无视伤害",
-		"skill": "起始技能：虚空步",
+		"bonus": "攻击+12% · 移速+10% · 瞬移暗杀",
+		"skill": "起始技能：虚影步 · 虚空吸髓",
 		"color": Color(0.667, 0.733, 0.8),     # #AABBCC
 		"color_hex": "#AABBCC",
 		"unlock_id": "spirit_root_void",

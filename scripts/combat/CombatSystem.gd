@@ -283,42 +283,111 @@ func execute_skill(skill_id: String, target: Node) -> void:
 	var total_damage: float = 0.0
 	
 	if skill["damage_multiplier"] > 0.0:
-		if skill["aoe_radius"] > 0.0:
-			# AoE: hit all enemies within radius of target position
+		var skill_effect: String = skill.get("effect", "")
+
+		# ── Chain Lightning: jump between multiple enemies ──────
+		if skill.get("aoe_radius", 0.0) == -1.0:
+			var chain_count: int = skill.get("chain_count", 3)
+			var hit_enemies: Array[Node] = []
+			var next_target: Node = target
+
+			for _i in range(chain_count):
+				if next_target == null or not is_instance_valid(next_target):
+					break
+				if next_target in hit_enemies:
+					break
+				hit_enemies.append(next_target)
+				var target_def: float = next_target.defense if "defense" in next_target else 0.0
+				var damage_info := calculate_damage(base_attack, target_def, skill["damage_multiplier"])
+				if next_target.has_method("take_damage"):
+					next_target.take_damage(damage_info["amount"])
+				damage_dealt.emit(next_target, damage_info["amount"], damage_info["is_critical"])
+				total_damage += damage_info["amount"]
+				# Spawn lightning arc VFX on hit target
+				_spawn_element_vfx(next_target.global_position, "lightning")
+				# Find next closest unhit enemy within 12m
+				var jump_target: Node = null
+				var jump_dist := 12.0
+				for e in enemies:
+					if is_instance_valid(e) and e not in hit_enemies:
+						var d: float = next_target.global_position.distance_to(e.global_position)
+						if d < jump_dist:
+							jump_dist = d
+							jump_target = e
+				next_target = jump_target
+
+			print("[CombatSystem] %s used %s — %.1f total damage (%d enemies chained)" % [
+				PlayerData.player_name, skill["name_zh"], total_damage, hit_enemies.size()
+			])
+
+		# ── Void Blink: teleport behind target, then strike ────
+		elif skill_effect == "blink":
+			if target != null and is_instance_valid(target) and player_entity != null:
+				# Teleport player 1.5m behind the target
+				var behind_offset := (target.global_position - player_entity.global_position).normalized() * 1.5
+				player_entity.global_position = target.global_position - behind_offset + Vector3(0, 0.1, 0)
+				_spawn_element_vfx(player_entity.global_position, "void")
+				# Strike
+				var target_def: float = target.defense if "defense" in target else 0.0
+				var damage_info := calculate_damage(base_attack, target_def, skill["damage_multiplier"])
+				if target.has_method("take_damage"):
+					target.take_damage(damage_info["amount"])
+				damage_dealt.emit(target, damage_info["amount"], damage_info["is_critical"])
+				total_damage = damage_info["amount"]
+				_spawn_element_vfx(target.global_position, "void")
+				print("[CombatSystem] %s used %s — blinked + %.1f damage" % [
+					PlayerData.player_name, skill["name_zh"], total_damage
+				])
+
+		elif skill.get("aoe_radius", 0.0) > 0.0:
+			# Standard AoE: hit all enemies within radius of target position
 			var aoe_center: Vector3 = target.global_position if target != null and is_instance_valid(target) else player_entity.global_position
 			var hit_count: int = 0
-			
+
 			for enemy in enemies:
 				if is_instance_valid(enemy):
 					var dist: float = aoe_center.distance_to(enemy.global_position)
 					if dist <= skill["aoe_radius"]:
 						var enemy_def: float = enemy.defense if "defense" in enemy else 0.0
 						var damage_info := calculate_damage(base_attack, enemy_def, skill["damage_multiplier"])
-						
+
 						if enemy.has_method("take_damage"):
 							enemy.take_damage(damage_info["amount"])
-						
+
 						damage_dealt.emit(enemy, damage_info["amount"], damage_info["is_critical"])
 						total_damage += damage_info["amount"]
 						hit_count += 1
-			
+
 			print("[CombatSystem] %s used %s — %.1f total damage (%d enemies hit)" % [
 				PlayerData.player_name, skill["name_zh"], total_damage, hit_count
 			])
 		else:
-			# Single target
+			# Single target (possibly with on-hit effects)
 			if target != null and is_instance_valid(target):
 				var target_def: float = target.defense if "defense" in target else 0.0
 				var damage_info := calculate_damage(base_attack, target_def, skill["damage_multiplier"])
-				
+
 				if target.has_method("take_damage"):
 					target.take_damage(damage_info["amount"])
-				
+
 				damage_dealt.emit(target, damage_info["amount"], damage_info["is_critical"])
 				total_damage = damage_info["amount"]
-				
-				print("[CombatSystem] %s used %s — %.1f damage" % [
-					PlayerData.player_name, skill["name_zh"], total_damage
+
+				# ── Stun effect (天雷掌) ──────────────────────
+				if skill_effect == "stun":
+					_apply_stun(target, skill.get("effect_duration", 2.0))
+
+				# ── Lifesteal (虚空吸髓) ──────────────────────
+				elif skill_effect == "lifesteal":
+					var steal_ratio: float = skill.get("lifesteal_ratio", 0.5)
+					var heal_amount: float = damage_info["amount"] * steal_ratio
+					if player_entity != null and player_entity.has_method("heal"):
+						player_entity.heal(heal_amount)
+					print("[CombatSystem] Void Drain healed player for %.1f HP" % heal_amount)
+
+				print("[CombatSystem] %s used %s — %.1f damage%s" % [
+					PlayerData.player_name, skill["name_zh"], total_damage,
+					" [麻痹]" if skill_effect == "stun" else ""
 				])
 	else:
 		# Non-damage skill (heal, shield, etc.)
@@ -343,18 +412,131 @@ func _apply_skill_effect(skill: Dictionary) -> void:
 		"wood_heal":
 			# Heal 20% of max HP + realm scaling
 			var heal_amount: float = PlayerData.get_total_hp() * 0.2
-			PlayerData.base_hp = min(PlayerData.base_hp + heal_amount, PlayerData.get_total_hp())
+			if player_entity != null and player_entity.has_method("heal"):
+				player_entity.heal(heal_amount)
+			else:
+				PlayerData.base_hp = min(PlayerData.base_hp + heal_amount, PlayerData.get_total_hp())
 			print("[CombatSystem] %s healed for %.1f HP" % [PlayerData.player_name, heal_amount])
 		"water_shield":
-			# Temporary defense boost — add flat defense for 8 seconds
-			# TODO: Implement buff system with timers
-			var shield_amount: float = PlayerData.get_total_defense() * 0.5
-			PlayerData.base_defense += shield_amount
-			print("[CombatSystem] %s gained %.1f temporary defense" % [PlayerData.player_name, shield_amount])
+			# Temporary defense boost via BuffSystem
+			BuffSystem.apply_buff(player_entity if player_entity else self, {
+				"type": BuffSystem.BuffType.DEF_UP,
+				"magnitude": PlayerData.get_total_defense() * 0.5,
+				"duration": 8.0,
+				"source": "water_shield",
+			})
+			print("[CombatSystem] %s gained water shield (DEF +%.1f for 8s)" % [
+				PlayerData.player_name, PlayerData.get_total_defense() * 0.5
+			])
 		"earth_wall":
-			# AoE slow + temporary block — mostly handled via aoe_radius
-			# TODO: Implement slow debuff on enemies in range
+			# AoE slow via BuffSystem on all nearby enemies
+			if player_entity != null:
+				for enemy in enemies:
+					if is_instance_valid(enemy):
+						var dist: float = player_entity.global_position.distance_to(enemy.global_position)
+						if dist <= 3.5:
+							BuffSystem.apply_buff(enemy, {
+								"type": BuffSystem.BuffType.SPEED_DOWN,
+								"magnitude": enemy.move_speed * 0.6 if "move_speed" in enemy else 2.0,
+								"duration": 5.0,
+								"source": "earth_wall",
+							})
+							if "move_speed" in enemy:
+								enemy.move_speed = max(0.5, enemy.move_speed - 2.0)
 			print("[CombatSystem] %s raised an earth wall" % PlayerData.player_name)
+
+func _apply_stun(target: Node, duration: float) -> void:
+	"""Stun an enemy by zeroing its move speed for `duration` seconds.
+	
+	Stores original speed in a metadata key and restores it via a timer.
+	"""
+	if target == null or not is_instance_valid(target):
+		return
+	if not "move_speed" in target:
+		return
+
+	# Prevent double-stun
+	if target.has_meta("stun_original_speed"):
+		return
+
+	var original_speed: float = target.move_speed
+	target.set_meta("stun_original_speed", original_speed)
+	target.move_speed = 0.0
+
+	# Visual: briefly tint the mesh yellow/white for stun
+	if "mesh" in target and target.mesh is MeshInstance3D:
+		var mat := target.mesh.get_surface_override_material(0)
+		if mat is StandardMaterial3D:
+			mat.albedo_color = Color(0.9, 0.9, 0.2)
+
+	# Restore after duration
+	var timer := target.get_tree().create_timer(duration)
+	timer.timeout.connect(func():
+		if is_instance_valid(target):
+			target.move_speed = target.get_meta("stun_original_speed", original_speed)
+			target.remove_meta("stun_original_speed")
+			# Restore original mesh color
+			if "mesh" in target and target.mesh is MeshInstance3D:
+				var mat := target.mesh.get_surface_override_material(0)
+				if mat is StandardMaterial3D:
+					mat.albedo_color = Color(1.0, 0.3, 0.3)  # Reset to red (enemy default)
+	)
+	print("[CombatSystem] Stunned %s for %.1fs" % [
+		target.enemy_name if "enemy_name" in target else "enemy", duration
+	])
+
+func _spawn_element_vfx(position: Vector3, element: String) -> void:
+	"""Spawn a quick particle burst at a world position for the given element.
+	
+	Reuses the SkillVFX scene if available, otherwise creates a minimal inline burst.
+	"""
+	var vfx_scene_path := "res://scenes/vfx/SkillVFX.tscn"
+	if ResourceLoader.exists(vfx_scene_path):
+		var vfx_res: PackedScene = load(vfx_scene_path)
+		if vfx_res:
+			var vfx_inst: Node3D = vfx_res.instantiate() as Node3D
+			if vfx_inst:
+				get_tree().current_scene.add_child(vfx_inst)
+				vfx_inst.global_position = position
+				if vfx_inst.has_method("play_element"):
+					vfx_inst.play_element(element)
+				return
+
+	# Fallback: create an inline GPUParticles3D burst
+	var particles := GPUParticles3D.new()
+	var mat := ParticleProcessMaterial.new()
+	match element:
+		"lightning":
+			mat.color = Color(0.7, 0.5, 1.0)   # Purple-white lightning
+			mat.initial_velocity_min = 3.0
+			mat.initial_velocity_max = 6.0
+		"void":
+			mat.color = Color(0.4, 0.0, 0.8, 0.8)  # Dark violet
+			mat.initial_velocity_min = 2.0
+			mat.initial_velocity_max = 4.0
+		_:
+			mat.color = Color(1.0, 0.5, 0.1)
+			mat.initial_velocity_min = 2.0
+			mat.initial_velocity_max = 5.0
+	mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	mat.emission_sphere_radius = 0.3
+	mat.gravity = Vector3(0, 2.0, 0)
+	mat.scale_min = 0.05
+	mat.scale_max = 0.15
+	particles.process_material = mat
+	particles.amount = 30
+	particles.lifetime = 0.6
+	particles.explosiveness = 0.95
+	particles.one_shot = true
+	get_tree().current_scene.add_child(particles)
+	particles.global_position = position
+	particles.emitting = true
+	# Auto-free after particles finish
+	var timer := get_tree().create_timer(1.0)
+	timer.timeout.connect(func():
+		if is_instance_valid(particles):
+			particles.queue_free()
+	)
 
 func use_skill(skill_id: String) -> void:
 	"""Legacy wrapper — execute a skill against the current target."""
