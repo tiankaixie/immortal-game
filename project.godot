@@ -26,6 +26,7 @@ BoonDatabase="*res://scripts/systems/BoonDatabase.gd"
 TradeSystem="*res://scripts/systems/TradeSystem.gd"
 AudioManager="*res://scripts/core/AudioManager.gd"
 RunStats="*res://scripts/core/RunStats.gd"
+RunHistory="*res://scripts/core/RunHistory.gd"
 
 [display]
 
