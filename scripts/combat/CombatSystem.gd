@@ -303,8 +303,8 @@ func execute_skill(skill_id: String, target: Node) -> void:
 					next_target.take_damage(damage_info["amount"])
 				damage_dealt.emit(next_target, damage_info["amount"], damage_info["is_critical"])
 				total_damage += damage_info["amount"]
-				# Spawn lightning arc VFX on hit target
-				_spawn_element_vfx(next_target.global_position, "lightning")
+				# Spawn chain lightning arc VFX on hit target
+				_spawn_element_vfx(next_target.global_position, "chain_lightning")
 				# Find next closest unhit enemy within 12m
 				var jump_target: Node = null
 				var jump_dist := 12.0
@@ -376,6 +376,7 @@ func execute_skill(skill_id: String, target: Node) -> void:
 				# ── Stun effect (天雷掌) ──────────────────────
 				if skill_effect == "stun":
 					_apply_stun(target, skill.get("effect_duration", 2.0))
+					_spawn_element_vfx(target.global_position, "thunder_palm")
 
 				# ── Lifesteal (虚空吸髓) ──────────────────────
 				elif skill_effect == "lifesteal":
@@ -505,7 +506,25 @@ func _spawn_element_vfx(position: Vector3, element: String) -> void:
 	# Fallback: create an inline GPUParticles3D burst
 	var particles := GPUParticles3D.new()
 	var mat := ParticleProcessMaterial.new()
+	var amount: int = 30
+	var part_lifetime: float = 0.6
 	match element:
+		"thunder_palm":
+			mat.color = Color(1.0, 0.95, 0.3)   # Bright yellow-white
+			mat.initial_velocity_min = 5.0
+			mat.initial_velocity_max = 12.0
+			mat.damping_min = 6.0
+			mat.damping_max = 10.0
+			amount = 60
+			part_lifetime = 0.4
+		"chain_lightning":
+			mat.color = Color(0.3, 0.6, 1.0)    # Electric blue-white
+			mat.initial_velocity_min = 6.0
+			mat.initial_velocity_max = 14.0
+			mat.damping_min = 4.0
+			mat.damping_max = 7.0
+			amount = 80
+			part_lifetime = 0.5
 		"lightning":
 			mat.color = Color(0.7, 0.5, 1.0)   # Purple-white lightning
 			mat.initial_velocity_min = 3.0
@@ -520,12 +539,12 @@ func _spawn_element_vfx(position: Vector3, element: String) -> void:
 			mat.initial_velocity_max = 5.0
 	mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
 	mat.emission_sphere_radius = 0.3
-	mat.gravity = Vector3(0, 2.0, 0)
+	mat.gravity = Vector3(0, 2.0, 0) if element not in ["thunder_palm", "chain_lightning"] else Vector3.ZERO
 	mat.scale_min = 0.05
 	mat.scale_max = 0.15
 	particles.process_material = mat
-	particles.amount = 30
-	particles.lifetime = 0.6
+	particles.amount = amount
+	particles.lifetime = part_lifetime
 	particles.explosiveness = 0.95
 	particles.one_shot = true
 	get_tree().current_scene.add_child(particles)
