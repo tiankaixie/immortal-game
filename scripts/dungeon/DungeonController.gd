@@ -173,6 +173,10 @@ func _connect_room_manager() -> void:
 	room_number_changed.emit(current_room_number, MAX_ROOMS)
 	room_type_changed.emit(current_room_type, ROOM_TYPE_NAMES.get(current_room_type, "普通间"))
 
+	# Apply hard mode to initial room enemies
+	if GameManager.hard_mode:
+		_apply_hard_mode_to_room()
+
 	# Initialize dungeon progress bar on HUD
 	var hud_init := main.find_child("HUD", true, false)
 	if hud_init and hud_init.has_method("update_dungeon_progress"):
@@ -329,6 +333,10 @@ func _swap_room() -> void:
 		else:
 			# Spawn enemies based on room difficulty composition
 			_spawn_room_enemies()
+
+	# Apply hard mode multipliers to all enemies in room
+	if GameManager.hard_mode:
+		_apply_hard_mode_to_room()
 
 	# Re-wire player and enemies
 	var player := room_node.get_node_or_null("Player")
@@ -717,6 +725,10 @@ func _spawn_room_enemies() -> void:
 			room_node.add_child(enemy)
 			spawn_index += 1
 
+	# Apply hard mode multipliers
+	if GameManager.hard_mode:
+		_apply_hard_mode_to_room()
+
 	print("[DungeonController] Spawned %d enemies for room %d" % [spawn_index, current_room_number])
 
 func _get_room_composition() -> Array:
@@ -831,6 +843,24 @@ func _try_open_chest() -> void:
 
 	# Show boon selection
 	_show_boon_selection()
+
+# ─── Hard Mode ─────────────────────────────────────────────────
+func _apply_hard_mode_to_room() -> void:
+	"""Apply 1.5x HP and ATK multiplier to all enemies in the current room."""
+	if room_node == null:
+		return
+	for child in room_node.get_children():
+		if child.has_method("take_damage") and not child.is_in_group("player"):
+			# Boost HP
+			if "max_hp" in child:
+				child.max_hp = int(child.max_hp * 1.5)
+			if "current_hp" in child:
+				child.current_hp = int(child.current_hp * 1.5)
+			# Boost ATK
+			if "attack_damage" in child:
+				child.attack_damage = int(child.attack_damage * 1.5)
+			elif "contact_damage" in child:
+				child.contact_damage = int(child.contact_damage * 1.5)
 
 # ─── Fade Overlay ─────────────────────────────────────────────
 func _create_fade_overlay() -> void:

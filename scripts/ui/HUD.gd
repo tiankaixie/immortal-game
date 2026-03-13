@@ -116,6 +116,10 @@ func _ready() -> void:
 	# Create drop notification overlay
 	_create_drop_notification()
 
+	# Show hard mode indicator if active
+	if GameManager.hard_mode:
+		_create_hard_mode_indicator()
+
 	# Create skill unlock notification overlay
 	_create_skill_unlock_notification()
 
@@ -463,6 +467,24 @@ func _create_skill_unlock_notification() -> void:
 	"""Create the skill unlock notification overlay."""
 	skill_unlock_notification = SkillUnlockNotificationScene.instantiate()
 	get_tree().root.call_deferred("add_child", skill_unlock_notification)
+
+# ─── Hard Mode Indicator ──────────────────────────────────────
+func _create_hard_mode_indicator() -> void:
+	"""Show a red '劫难' indicator at the top-right of the HUD."""
+	var label := Label.new()
+	label.name = "HardModeIndicator"
+	label.text = "⚡ 劫难"
+	label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	label.anchor_left = 1.0
+	label.anchor_right = 1.0
+	label.offset_left = -120
+	label.offset_right = -10
+	label.offset_top = 10
+	label.offset_bottom = 40
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	label.add_theme_font_size_override("font_size", 22)
+	label.add_theme_color_override("font_color", Color(1.0, 0.3, 0.2))
+	add_child(label)
 
 # ─── Skill Panel ─────────────────────────────────────────────
 func _create_skill_panel() -> void:

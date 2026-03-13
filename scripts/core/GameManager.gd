@@ -24,6 +24,9 @@ const SAVE_PATH: String = "user://savegame.json"
 var current_state: GameState = GameState.MAIN_MENU
 var previous_state: GameState = GameState.MAIN_MENU
 
+# ─── Hard Mode (劫难模式) ──────────────────────────────────────
+var hard_mode: bool = false
+
 # ─── Run Data (reset each dungeon run) ────────────────────────
 var current_dungeon_id: String = ""
 var current_floor: int = 0
@@ -45,6 +48,11 @@ func _ready() -> void:
 	# Attempt to load save on startup
 	if has_save_file():
 		print("[GameManager] Save file detected at %s" % SAVE_PATH)
+
+func set_hard_mode(enabled: bool) -> void:
+	"""Toggle hard mode (劫难模式). Enemies deal more damage and have more HP."""
+	hard_mode = enabled
+	print("[GameManager] Hard mode: %s" % ("ON" if hard_mode else "OFF"))
 
 # ─── State Management ──────────────────────────────────────────
 func change_state(new_state: GameState) -> void:

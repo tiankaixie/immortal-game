@@ -5,11 +5,11 @@ extends Control
 ## Player selects one of five elemental spiritual roots before starting the game.
 ## All UI is built procedurally in code (no external assets).
 
-const CARD_WIDTH := 200.0
+const CARD_WIDTH := 180.0
 const CARD_HEIGHT := 280.0
-const CARD_GAP := 20.0
+const CARD_GAP := 16.0
 
-# Element data for the 5 base roots
+# Element data for the 5 base roots + 2 unlockable
 const ROOT_DATA := [
 	{
 		"root": PlayerData.SpiritualRoot.METAL,
@@ -20,6 +20,7 @@ const ROOT_DATA := [
 		"skill": "起始技能：金剑斩",
 		"color": Color(0.75, 0.75, 1.0),       # #C0C0FF
 		"color_hex": "#C0C0FF",
+		"unlock_id": "",
 	},
 	{
 		"root": PlayerData.SpiritualRoot.WOOD,
@@ -30,6 +31,7 @@ const ROOT_DATA := [
 		"skill": "起始技能：木灵愈",
 		"color": Color(0.267, 0.8, 0.267),     # #44CC44
 		"color_hex": "#44CC44",
+		"unlock_id": "",
 	},
 	{
 		"root": PlayerData.SpiritualRoot.WATER,
@@ -40,6 +42,7 @@ const ROOT_DATA := [
 		"skill": "起始技能：寒冰剑",
 		"color": Color(0.267, 0.533, 1.0),     # #4488FF
 		"color_hex": "#4488FF",
+		"unlock_id": "",
 	},
 	{
 		"root": PlayerData.SpiritualRoot.FIRE,
@@ -50,6 +53,7 @@ const ROOT_DATA := [
 		"skill": "起始技能：火球术",
 		"color": Color(1.0, 0.4, 0.2),         # #FF6633
 		"color_hex": "#FF6633",
+		"unlock_id": "",
 	},
 	{
 		"root": PlayerData.SpiritualRoot.EARTH,
@@ -60,12 +64,36 @@ const ROOT_DATA := [
 		"skill": "起始技能：金剑斩",
 		"color": Color(0.667, 0.533, 0.267),   # #AA8844
 		"color_hex": "#AA8844",
+		"unlock_id": "",
+	},
+	{
+		"root": PlayerData.SpiritualRoot.LIGHTNING,
+		"char": "雷",
+		"name": "雷灵根",
+		"element": "雷系 · Thunder",
+		"bonus": "攻击附带麻痹效果",
+		"skill": "起始技能：雷霆斩",
+		"color": Color(0.6, 0.4, 1.0),         # #9966FF
+		"color_hex": "#9966FF",
+		"unlock_id": "spirit_root_thunder",
+	},
+	{
+		"root": PlayerData.SpiritualRoot.VOID,
+		"char": "虚",
+		"name": "虚灵根",
+		"element": "虚系 · Void",
+		"bonus": "概率无视伤害",
+		"skill": "起始技能：虚空步",
+		"color": Color(0.667, 0.733, 0.8),     # #AABBCC
+		"color_hex": "#AABBCC",
+		"unlock_id": "spirit_root_void",
 	},
 ]
 
 var _selected_index: int = -1
 var _cards: Array[Control] = []
 var _card_borders: Array[ColorRect] = []
+var _card_locked: Array[bool] = []
 var _confirm_btn: Button
 var _back_btn: Button
 
@@ -118,13 +146,22 @@ func _build_ui() -> void:
 	add_child(cards_container)
 
 	for i in range(ROOT_DATA.size()):
-		var card := _create_card(i)
+		var data: Dictionary = ROOT_DATA[i]
+		var is_locked := false
+		var unlock_id: String = data.get("unlock_id", "")
+		if unlock_id != "" and not UnlockSystem.is_unlocked(unlock_id):
+			is_locked = true
+		_card_locked.append(is_locked)
+
+		var card := _create_card(i, is_locked)
 		card.position = Vector2(i * (CARD_WIDTH + CARD_GAP), 0)
 		cards_container.add_child(card)
 		_cards.append(card)
 
 		# Create hover + burst particles for each card
-		var elem_color: Color = ROOT_DATA[i]["color"]
+		var elem_color: Color = data["color"]
+		if is_locked:
+			elem_color = Color(0.3, 0.3, 0.3)
 		var card_center := card.position + Vector2(CARD_WIDTH / 2.0, CARD_HEIGHT / 2.0)
 
 		var hover_p := _create_element_particles(elem_color, 20, 1.0, false)
@@ -177,9 +214,10 @@ func _build_ui() -> void:
 	_confirm_btn.modulate = Color(1.0, 0.9, 0.5, 1.0)
 	btn_container.add_child(_confirm_btn)
 
-func _create_card(index: int) -> Control:
+func _create_card(index: int, is_locked: bool = false) -> Control:
 	var data: Dictionary = ROOT_DATA[index]
 	var elem_color: Color = data["color"]
+	var locked_gray := Color(0.35, 0.35, 0.4)
 
 	# Root container for the card
 	var card := Control.new()
@@ -190,7 +228,7 @@ func _create_card(index: int) -> Control:
 
 	# Border (glow effect for selected)
 	var border := ColorRect.new()
-	border.color = Color(0.2, 0.15, 0.3, 0.6)
+	border.color = Color(0.15, 0.15, 0.2, 0.6) if is_locked else Color(0.2, 0.15, 0.3, 0.6)
 	border.position = Vector2(-3, -3)
 	border.size = Vector2(CARD_WIDTH + 6, CARD_HEIGHT + 6)
 	card.add_child(border)
@@ -198,72 +236,118 @@ func _create_card(index: int) -> Control:
 
 	# Card background
 	var card_bg := ColorRect.new()
-	card_bg.color = Color(0.1, 0.08, 0.15, 0.95)
+	card_bg.color = Color(0.08, 0.08, 0.1, 0.95) if is_locked else Color(0.1, 0.08, 0.15, 0.95)
 	card_bg.size = Vector2(CARD_WIDTH, CARD_HEIGHT)
 	card.add_child(card_bg)
 
 	# Top accent line
 	var accent := ColorRect.new()
-	accent.color = elem_color
+	accent.color = locked_gray if is_locked else elem_color
 	accent.size = Vector2(CARD_WIDTH, 3)
 	card.add_child(accent)
 
-	# Element character (large)
-	var char_label := Label.new()
-	char_label.text = data["char"]
-	char_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	char_label.position = Vector2(0, 20)
-	char_label.size = Vector2(CARD_WIDTH, 80)
-	char_label.add_theme_font_size_override("font_size", 64)
-	char_label.add_theme_color_override("font_color", elem_color)
-	card.add_child(char_label)
+	if is_locked:
+		# ── Locked card layout ──
+		# Lock icon
+		var lock_label := Label.new()
+		lock_label.text = "🔒"
+		lock_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lock_label.position = Vector2(0, 30)
+		lock_label.size = Vector2(CARD_WIDTH, 60)
+		lock_label.add_theme_font_size_override("font_size", 48)
+		card.add_child(lock_label)
 
-	# Root name
-	var name_label := Label.new()
-	name_label.text = data["name"]
-	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.position = Vector2(0, 105)
-	name_label.size = Vector2(CARD_WIDTH, 30)
-	name_label.add_theme_font_size_override("font_size", 22)
-	name_label.add_theme_color_override("font_color", Color(0.9, 0.85, 0.75))
-	card.add_child(name_label)
+		# Root name (grayed)
+		var name_label := Label.new()
+		name_label.text = data["name"]
+		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		name_label.position = Vector2(0, 100)
+		name_label.size = Vector2(CARD_WIDTH, 30)
+		name_label.add_theme_font_size_override("font_size", 22)
+		name_label.add_theme_color_override("font_color", locked_gray)
+		card.add_child(name_label)
 
-	# Element name
-	var elem_label := Label.new()
-	elem_label.text = data["element"]
-	elem_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	elem_label.position = Vector2(0, 135)
-	elem_label.size = Vector2(CARD_WIDTH, 24)
-	elem_label.add_theme_font_size_override("font_size", 14)
-	elem_label.add_theme_color_override("font_color", Color(0.6, 0.55, 0.5, 0.8))
-	card.add_child(elem_label)
+		# Divider
+		var divider := ColorRect.new()
+		divider.color = Color(0.3, 0.3, 0.35, 0.3)
+		divider.position = Vector2(20, 140)
+		divider.size = Vector2(CARD_WIDTH - 40, 1)
+		card.add_child(divider)
 
-	# Divider
-	var divider := ColorRect.new()
-	divider.color = elem_color * Color(1, 1, 1, 0.3)
-	divider.position = Vector2(20, 168)
-	divider.size = Vector2(CARD_WIDTH - 40, 1)
-	card.add_child(divider)
+		# Unlock condition text
+		var unlock_id: String = data.get("unlock_id", "")
+		var condition_text := "未知条件"
+		var definition := UnlockSystem.get_definition(unlock_id)
+		if not definition.is_empty():
+			condition_text = definition.get("condition_text", condition_text)
 
-	# Bonus description
-	var bonus_label := Label.new()
-	bonus_label.text = data["bonus"]
-	bonus_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	bonus_label.position = Vector2(0, 180)
-	bonus_label.size = Vector2(CARD_WIDTH, 30)
-	bonus_label.add_theme_font_size_override("font_size", 16)
-	bonus_label.add_theme_color_override("font_color", Color(0.7, 0.9, 0.7))
-	card.add_child(bonus_label)
+		var cond_label := Label.new()
+		cond_label.text = "解锁条件:\n" + condition_text
+		cond_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		cond_label.position = Vector2(5, 155)
+		cond_label.size = Vector2(CARD_WIDTH - 10, 80)
+		cond_label.add_theme_font_size_override("font_size", 14)
+		cond_label.add_theme_color_override("font_color", Color(0.5, 0.45, 0.4, 0.8))
+		cond_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		card.add_child(cond_label)
+	else:
+		# ── Normal unlocked card layout ──
+		# Element character (large)
+		var char_label := Label.new()
+		char_label.text = data["char"]
+		char_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		char_label.position = Vector2(0, 20)
+		char_label.size = Vector2(CARD_WIDTH, 80)
+		char_label.add_theme_font_size_override("font_size", 64)
+		char_label.add_theme_color_override("font_color", elem_color)
+		card.add_child(char_label)
 
-	# Starting skill
-	var skill_label := Label.new()
-	skill_label.text = data["skill"]
-	skill_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	skill_label.position = Vector2(0, 215)
-	skill_label.size = Vector2(CARD_WIDTH, 30)
-	skill_label.add_theme_font_size_override("font_size", 14)
-	skill_label.add_theme_color_override("font_color", Color(0.6, 0.7, 0.85))
-	card.add_child(skill_label)
+		# Root name
+		var name_label := Label.new()
+		name_label.text = data["name"]
+		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		name_label.position = Vector2(0, 105)
+		name_label.size = Vector2(CARD_WIDTH, 30)
+		name_label.add_theme_font_size_override("font_size", 22)
+		name_label.add_theme_color_override("font_color", Color(0.9, 0.85, 0.75))
+		card.add_child(name_label)
+
+		# Element name
+		var elem_label := Label.new()
+		elem_label.text = data["element"]
+		elem_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		elem_label.position = Vector2(0, 135)
+		elem_label.size = Vector2(CARD_WIDTH, 24)
+		elem_label.add_theme_font_size_override("font_size", 14)
+		elem_label.add_theme_color_override("font_color", Color(0.6, 0.55, 0.5, 0.8))
+		card.add_child(elem_label)
+
+		# Divider
+		var divider := ColorRect.new()
+		divider.color = elem_color * Color(1, 1, 1, 0.3)
+		divider.position = Vector2(20, 168)
+		divider.size = Vector2(CARD_WIDTH - 40, 1)
+		card.add_child(divider)
+
+		# Bonus description
+		var bonus_label := Label.new()
+		bonus_label.text = data["bonus"]
+		bonus_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		bonus_label.position = Vector2(0, 180)
+		bonus_label.size = Vector2(CARD_WIDTH, 30)
+		bonus_label.add_theme_font_size_override("font_size", 16)
+		bonus_label.add_theme_color_override("font_color", Color(0.7, 0.9, 0.7))
+		card.add_child(bonus_label)
+
+		# Starting skill
+		var skill_label := Label.new()
+		skill_label.text = data["skill"]
+		skill_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		skill_label.position = Vector2(0, 215)
+		skill_label.size = Vector2(CARD_WIDTH, 30)
+		skill_label.add_theme_font_size_override("font_size", 14)
+		skill_label.add_theme_color_override("font_color", Color(0.6, 0.7, 0.85))
+		card.add_child(skill_label)
 
 	# Connect mouse events
 	card.gui_input.connect(_on_card_input.bind(index))
@@ -292,6 +376,8 @@ func _on_card_hover(index: int, entering: bool) -> void:
 
 func _on_card_input(event: InputEvent, index: int) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		if index < _card_locked.size() and _card_locked[index]:
+			return  # Can't select locked cards
 		_select_card(index)
 
 func _select_card(index: int) -> void:
@@ -317,7 +403,14 @@ func _select_card(index: int) -> void:
 	print("[SpiritRootSelection] Selected: %s" % data["name"])
 
 func _on_random() -> void:
-	var rand_index := randi() % ROOT_DATA.size()
+	# Only pick from unlocked cards
+	var available: Array[int] = []
+	for i in range(ROOT_DATA.size()):
+		if i < _card_locked.size() and not _card_locked[i]:
+			available.append(i)
+	if available.is_empty():
+		return
+	var rand_index := available[randi() % available.size()]
 	_select_card(rand_index)
 
 func _on_back() -> void:

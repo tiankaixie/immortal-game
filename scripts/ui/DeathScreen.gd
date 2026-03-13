@@ -7,6 +7,7 @@ extends Control
 
 const SPIRIT_ROOT_SELECTION_PATH: String = "res://scenes/ui/SpiritRootSelection.tscn"
 const MAIN_MENU_PATH: String = "res://scenes/ui/MainMenu.tscn"
+const UNLOCK_NOTIFICATION_PATH: String = "res://scenes/ui/UnlockNotification.tscn"
 
 # Realm name mapping
 const REALM_NAMES: Array[String] = [
@@ -23,9 +24,11 @@ const SPIRIT_ROOT_COLORS: Dictionary = {
 	2: Color(0.27, 0.53, 1.0),   # WATER — 水
 	3: Color(1.0,  0.40, 0.20),  # FIRE — 火
 	4: Color(0.67, 0.53, 0.27),  # EARTH — 土
+	5: Color(0.6,  0.4,  1.0),   # LIGHTNING — 雷
+	6: Color(0.667, 0.733, 0.8), # VOID — 虚
 }
 
-const SPIRIT_ROOT_NAMES: Array[String] = ["金", "木", "水", "火", "土"]
+const SPIRIT_ROOT_NAMES: Array[String] = ["金", "木", "水", "火", "土", "雷", "虚"]
 
 var _accent_color: Color = Color(0.75, 0.75, 1.0)
 var _run_duration: float = 0.0
@@ -42,11 +45,12 @@ func _ready() -> void:
 	if _run_duration < 0:
 		_run_duration = 0
 
-	# Save current run to history
+	# Save current run to history and check unlocks
 	_save_current_run()
 
 	_build_ui()
 	_spawn_particles()
+	_check_unlocks()
 
 func _save_current_run() -> void:
 	"""Save the current run data to RunHistory."""
@@ -65,6 +69,22 @@ func _save_current_run() -> void:
 		"cause_of_death_room": floor_num,
 	}
 	RunHistory.save_run(run_data)
+	UnlockSystem.record_run(run_data)
+
+func _check_unlocks() -> void:
+	"""Check for new unlocks and show notification if any."""
+	var new_unlocks := UnlockSystem.check_new_unlocks()
+	if new_unlocks.size() > 0:
+		var notif_scene := load(UNLOCK_NOTIFICATION_PATH)
+		if notif_scene:
+			var notif := notif_scene.instantiate()
+			notif.setup(new_unlocks)
+			# Use a CanvasLayer to ensure it renders on top
+			var canvas := CanvasLayer.new()
+			canvas.layer = 30
+			add_child(canvas)
+			canvas.add_child(notif)
+			notif.dismissed.connect(func(): canvas.queue_free())
 
 # ─── Particle Effects ─────────────────────────────────────────
 
