@@ -323,10 +323,18 @@ func execute_skill(skill_id: String, target: Node) -> void:
 		# ── Void Blink: teleport behind target, then strike ────
 		elif skill_effect == "blink":
 			if target != null and is_instance_valid(target) and player_entity != null:
+				var origin_pos := player_entity.global_position
 				# Teleport player 1.5m behind the target
 				var behind_offset := (target.global_position - player_entity.global_position).normalized() * 1.5
 				player_entity.global_position = target.global_position - behind_offset + Vector3(0, 0.1, 0)
+				# VFX: purple particle burst at ORIGIN (departure)
+				_spawn_element_vfx(origin_pos, "void")
+				# VFX: purple particle burst at DESTINATION (arrival)
 				_spawn_element_vfx(player_entity.global_position, "void")
+				# VFX: screen distortion effect
+				_spawn_blink_distortion()
+				# VFX: ghostly afterimage at origin
+				_spawn_void_afterimage(origin_pos)
 				# Strike
 				var target_def: float = target.defense if "defense" in target else 0.0
 				var damage_info := calculate_damage(base_attack, target_def, skill["damage_multiplier"])
@@ -663,6 +671,56 @@ func _get_enemy_tier(enemy: Node) -> int:
 	elif hp >= 100.0:
 		return 1  # 筑基妖
 	return 0  # 练气妖
+
+func _spawn_blink_distortion() -> void:
+	"""Spawn a short-lived fullscreen distortion overlay for void_blink."""
+	var distortion := CanvasLayer.new()
+	distortion.layer = 80
+	get_tree().current_scene.add_child(distortion)
+
+	var rect := ColorRect.new()
+	rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rect.color = Color(0.3, 0.0, 0.5, 0.35)  # Purple flash
+	distortion.add_child(rect)
+
+	# Fade out over 0.3s then free
+	var tween := rect.create_tween()
+	tween.tween_property(rect, "color:a", 0.0, 0.3)
+	tween.tween_callback(distortion.queue_free)
+
+func _spawn_void_afterimage(origin: Vector3) -> void:
+	"""Spawn a ghostly purple capsule afterimage at the given position.
+	
+	Creates a semi-transparent MeshInstance3D that fades out over 1s.
+	Represents the player's silhouette lingering at the departure point.
+	"""
+	var afterimage := MeshInstance3D.new()
+
+	# Capsule mesh approximating player silhouette
+	var capsule := CapsuleMesh.new()
+	capsule.radius = 0.3
+	capsule.height = 1.6
+
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.5, 0.1, 0.9, 0.6)  # Purple, semi-transparent
+	mat.emission_enabled = true
+	mat.emission = Color(0.4, 0.0, 0.8)
+	mat.emission_energy_multiplier = 2.0
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	capsule.material = mat
+
+	afterimage.mesh = capsule
+	get_tree().current_scene.add_child(afterimage)
+	afterimage.global_position = origin + Vector3(0, 0.8, 0)  # Center at waist height
+
+	# Fade alpha from 0.6 → 0.0 over 1s, then free
+	var tween := afterimage.create_tween()
+	tween.tween_method(func(alpha: float):
+		mat.albedo_color.a = alpha
+	, 0.6, 0.0, 1.0)
+	tween.tween_callback(afterimage.queue_free)
 
 func _change_state(new_state: CombatState) -> void:
 	current_state = new_state
