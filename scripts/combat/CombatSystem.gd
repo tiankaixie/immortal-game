@@ -323,9 +323,9 @@ func execute_skill(skill_id: String, target: Node) -> void:
 		# ── Void Blink: teleport behind target, then strike ────
 		elif skill_effect == "blink":
 			if target != null and is_instance_valid(target) and player_entity != null:
-				var origin_pos := player_entity.global_position
+				var origin_pos: Vector3 = player_entity.global_position
 				# Teleport player 1.5m behind the target
-				var behind_offset := (target.global_position - player_entity.global_position).normalized() * 1.5
+				var behind_offset: Vector3 = (target.global_position - player_entity.global_position).normalized() * 1.5
 				player_entity.global_position = target.global_position - behind_offset + Vector3(0, 0.1, 0)
 				# VFX: purple particle burst at ORIGIN (departure)
 				_spawn_element_vfx(origin_pos, "void")
@@ -474,7 +474,7 @@ func _apply_stun(target: Node, duration: float) -> void:
 
 	# Visual: briefly tint the mesh yellow/white for stun
 	if "mesh" in target and target.mesh is MeshInstance3D:
-		var mat := target.mesh.get_surface_override_material(0)
+		var mat: Material = target.mesh.get_surface_override_material(0)
 		if mat is StandardMaterial3D:
 			mat.albedo_color = Color(0.9, 0.9, 0.2)
 
@@ -486,9 +486,9 @@ func _apply_stun(target: Node, duration: float) -> void:
 			target.remove_meta("stun_original_speed")
 			# Restore original mesh color
 			if "mesh" in target and target.mesh is MeshInstance3D:
-				var mat := target.mesh.get_surface_override_material(0)
-				if mat is StandardMaterial3D:
-					mat.albedo_color = Color(1.0, 0.3, 0.3)  # Reset to red (enemy default)
+				var mat_restore: Material = target.mesh.get_surface_override_material(0)
+				if mat_restore is StandardMaterial3D:
+					mat_restore.albedo_color = Color(1.0, 0.3, 0.3)  # Reset to red (enemy default)
 	)
 	print("[CombatSystem] Stunned %s for %.1fs" % [
 		target.enemy_name if "enemy_name" in target else "enemy", duration
@@ -665,7 +665,7 @@ func _get_enemy_tier(enemy: Node) -> int:
 	"""Estimate enemy tier based on stats. Higher stats = higher tier."""
 	if not is_instance_valid(enemy):
 		return 0
-	var hp := enemy.max_hp if "max_hp" in enemy else 50.0
+	var hp: float = enemy.max_hp if "max_hp" in enemy else 50.0
 	if hp >= 200.0:
 		return 2  # 结丹妖
 	elif hp >= 100.0:

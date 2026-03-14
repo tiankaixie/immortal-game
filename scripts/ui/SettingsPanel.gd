@@ -132,7 +132,7 @@ func _build_ui() -> void:
 	vbox.add_child(back_btn)
 
 	# Fade in
-	modulate = Color(1, 1, 1, 0)
+	self.modulate = Color(1, 1, 1, 0)
 	var tween := create_tween()
 	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 	tween.tween_property(self, "modulate:a", 1.0, 0.25)

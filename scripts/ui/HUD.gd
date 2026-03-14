@@ -699,7 +699,7 @@ func register_boss(boss: Node) -> void:
 	boss_bar_container.modulate = Color(1, 1, 1, 0)
 	var tween := create_tween()
 	tween.tween_property(boss_bar_container, "modulate:a", 1.0, 0.5)
-	print("[HUD] Boss HP bar registered: %s" % boss.get("enemy_name", "Boss"))
+	print("[HUD] Boss HP bar registered: %s" % (boss.get("enemy_name") if boss.get("enemy_name") != null else "Boss"))
 
 func _create_boss_hp_bar() -> void:
 	"""Build the boss HP bar UI at top-center of screen."""

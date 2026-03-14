@@ -110,7 +110,7 @@ func _setup_world_environment() -> void:
 	env.ambient_light_energy = 0.4
 
 	# Tonemap for richer colors
-	env.tonemap_mode = Environment.TONE_MAP_ACES
+	env.tonemap_mode = Environment.TONE_MAPPER_ACES
 	env.tonemap_white = 6.0
 
 	# Glow for mystical feel

@@ -100,10 +100,19 @@ signal realm_changed(realm: int, stage: int)
 
 func _ready() -> void:
 	_recalculate_sp_max()
+	# Auto-learn starter skills based on spiritual root
+	if unlocked_skills.is_empty():
+		call_deferred("_learn_starter_skills")
 	print("[PlayerData] Initialized — Realm: %s, Stage: %s" % [
 		CultivationRealm.keys()[cultivation_realm],
 		CultivationStage.keys()[cultivation_stage]
 	])
+
+func _learn_starter_skills() -> void:
+	var starters := SkillDatabase.get_starter_skills(spiritual_root)
+	for skill_id in starters:
+		learn_skill(skill_id)
+	print("[PlayerData] Starter skills learned: %s" % str(starters))
 
 # ─── Cultivation ───────────────────────────────────────────────
 func add_cultivation_xp(amount: float) -> void:

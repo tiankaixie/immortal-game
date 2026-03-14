@@ -254,7 +254,7 @@ func generate_contracts() -> void:
 	
 	templates.shuffle()
 	for i in range(min(MAX_ACTIVE_CONTRACTS, templates.size())):
-		var contract := templates[i].duplicate(true)
+		var contract: Dictionary = templates[i].duplicate(true)
 		contract["id"] = "contract_%d" % randi()
 		contract["progress"] = 0
 		active_contracts.append(contract)

@@ -37,6 +37,7 @@ signal hp_changed(current: float, maximum: float)
 signal defeated(enemy: Node)
 
 func _ready() -> void:
+	add_to_group("enemies")
 	current_hp = max_hp
 	_update_hp_label()
 

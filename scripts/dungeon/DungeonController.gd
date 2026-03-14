@@ -707,7 +707,7 @@ func _show_boss_victory_panel() -> void:
 	# Generate 4 boons with boosted rarity for boss rewards
 	var boons := _get_boss_boons(4)
 
-	var panel := panel_scene.instantiate()
+	var panel: Node = panel_scene.instantiate()
 	add_child(panel)
 	panel.show(last_boss_loot, boons)
 
@@ -845,7 +845,7 @@ func _spawn_merchant_in_room() -> void:
 		push_warning("[DungeonController] Merchant scene not found")
 		return
 
-	var merchant := merchant_scene.instantiate()
+	var merchant: Node = merchant_scene.instantiate()
 	# Place merchant at a corner of the room, away from enemies
 	merchant.position = Vector3(7.0, 0.0, 7.0)
 	room_node.add_child(merchant)
@@ -858,7 +858,7 @@ func _show_boon_selection() -> void:
 
 	var boon_ui_scene := load("res://scenes/ui/BoonUI.tscn")
 	if boon_ui_scene:
-		var boon_ui := boon_ui_scene.instantiate()
+		var boon_ui: Node = boon_ui_scene.instantiate()
 		add_child(boon_ui)
 		if boon_ui.has_signal("boon_chosen"):
 			boon_ui.boon_chosen.connect(_on_boon_ui_closed)

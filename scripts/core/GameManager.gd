@@ -108,9 +108,10 @@ func grant_random_equipment(luck_modifier: float = 2.0) -> Dictionary:
 	The caller is responsible for adding it to PlayerData.inventory if needed.
 	"""
 	var slot_pool := ["weapon", "armor", "accessory_1", "talisman"]
-	var slot := slot_pool[randi() % slot_pool.size()]
+	var slot: String = slot_pool[randi() % slot_pool.size()]
 
-	var item := EquipmentSystem.generate_equipment(slot, current_floor, luck_modifier)
+	var equip_sys = get_node("/root/EquipmentSystem")
+	var item: Dictionary = equip_sys.generate_equipment(slot, current_floor, luck_modifier)
 	print("[GameManager] Equipment generated: %s (%s) [luck %.1fx]" % [
 		item.get("name", "Unknown"), item.get("rarity_name", "?"), luck_modifier
 	])

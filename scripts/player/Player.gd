@@ -90,10 +90,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("toggle_auto_battle"):
 		CombatSystem.toggle_auto_battle()
 
-	# Skill hotkeys [1]-[4]
+	# Skill hotkeys [1]-[4] — check both keycode and physical_keycode for IME compat
 	if event is InputEventKey and event.pressed and not event.echo:
 		var hotkey_index := -1
-		match event.keycode:
+		var key: int = event.keycode if event.keycode != 0 else event.physical_keycode
+		match key:
 			KEY_1: hotkey_index = 0
 			KEY_2: hotkey_index = 1
 			KEY_3: hotkey_index = 2
@@ -104,6 +105,13 @@ func _unhandled_input(event: InputEvent) -> void:
 func _physics_process(delta: float) -> void:
 	_update_camera()
 	_update_dash_timers(delta)
+
+	# Manual attack (left click)
+	if Input.is_action_just_pressed("attack"):
+		var target := _find_nearest_enemy()
+		if target != null:
+			CombatSystem.on_manual_input()
+			CombatSystem._perform_basic_attack(target)
 
 	# Apply gravity
 	if not is_on_floor():
@@ -138,7 +146,7 @@ func _process_movement(delta: float) -> void:
 	right.y = 0.0
 	right = right.normalized()
 
-	var move_dir := (forward * -input_dir.y + right * input_dir.x)
+	var move_dir := (forward * input_dir.y + right * input_dir.x)
 
 	# Sprint check — scale by spiritual root speed bonus
 	var is_sprinting := Input.is_action_pressed("sprint") and move_dir.length() > 0.1
@@ -148,16 +156,20 @@ func _process_movement(delta: float) -> void:
 	if move_dir.length() > 0.1:
 		velocity.x = move_dir.x * speed
 		velocity.z = move_dir.z * speed
-		# Rotate character to face movement direction
+		# Rotate only the mesh to face movement direction (not the CharacterBody3D,
+		# because SpringArm3D is a child and would shift the camera basis)
 		var target_rot := atan2(move_dir.x, move_dir.z)
-		rotation.y = lerp_angle(rotation.y, target_rot, ROTATION_SPEED * delta)
+		mesh.rotation.y = lerp_angle(mesh.rotation.y, target_rot, ROTATION_SPEED * delta)
 	else:
 		velocity.x = move_toward(velocity.x, 0.0, speed * delta * 5.0)
 		velocity.z = move_toward(velocity.z, 0.0, speed * delta * 5.0)
 
 	# Dash initiation
 	if Input.is_action_just_pressed("dodge") and dash_cooldown_timer <= 0.0:
-		_start_dash(move_dir if move_dir.length() > 0.1 else -global_transform.basis.z)
+		var cam_forward := -spring_arm.global_transform.basis.z
+		cam_forward.y = 0.0
+		cam_forward = cam_forward.normalized()
+		_start_dash(move_dir if move_dir.length() > 0.1 else cam_forward)
 
 # ─── Dash ──────────────────────────────────────────────────────
 func _start_dash(direction: Vector3) -> void:

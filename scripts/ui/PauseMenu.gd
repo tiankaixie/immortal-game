@@ -83,7 +83,7 @@ func _build_ui() -> void:
 	vbox.add_child(main_menu_btn)
 
 	# 淡入动画
-	modulate = Color(1, 1, 1, 0)
+	self.modulate = Color(1, 1, 1, 0)
 	var tween := create_tween()
 	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 	tween.tween_property(self, "modulate:a", 1.0, 0.25)
@@ -137,9 +137,9 @@ func resume() -> void:
 
 func _on_settings() -> void:
 	"""打开设置面板。"""
-	var settings_scene := load("res://scenes/ui/SettingsPanel.tscn")
+	var settings_scene = load("res://scenes/ui/SettingsPanel.tscn")
 	if settings_scene:
-		var settings_panel := settings_scene.instantiate()
+		var settings_panel: Node = settings_scene.instantiate()
 		add_child(settings_panel)
 		if settings_panel.has_signal("closed"):
 			settings_panel.closed.connect(_on_settings_closed)
