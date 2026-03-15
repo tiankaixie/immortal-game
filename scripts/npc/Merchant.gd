@@ -103,9 +103,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not player_in_range or shop_open:
 		return
 
-	# Check for E key press
-	if event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_E:
+	# Check for interact key (E) — use action + physical_keycode fallback for IME compat
+	if event.is_action_pressed("interact"):
+		_open_shop()
+		get_viewport().set_input_as_handled()
+	elif event is InputEventKey and event.pressed and not event.echo:
+		var key: int = event.keycode if event.keycode != 0 else event.physical_keycode
+		if key == KEY_E:
 			_open_shop()
 			get_viewport().set_input_as_handled()
 

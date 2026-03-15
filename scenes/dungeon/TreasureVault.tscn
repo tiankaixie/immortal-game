@@ -10,7 +10,7 @@ size = Vector2(24, 24)
 [sub_resource type="StandardMaterial3D" id="Material_floor"]
 albedo_color = Color(0.2, 0.15, 0.25, 1)
 emission_enabled = true
-emission = Color(0.15, 0.1, 0.2)
+emission = Color(0.15, 0.1, 0.2, 1)
 emission_energy_multiplier = 0.2
 
 [sub_resource type="BoxMesh" id="BoxMesh_wall"]
@@ -19,7 +19,7 @@ size = Vector3(24, 5, 0.5)
 [sub_resource type="StandardMaterial3D" id="Material_wall"]
 albedo_color = Color(0.3, 0.2, 0.35, 1)
 emission_enabled = true
-emission = Color(0.25, 0.15, 0.3)
+emission = Color(0.25, 0.15, 0.3, 1)
 emission_energy_multiplier = 0.15
 metallic = 0.3
 
@@ -40,7 +40,7 @@ height = 0.9
 [sub_resource type="StandardMaterial3D" id="Material_chest"]
 albedo_color = Color(0.85, 0.7, 0.15, 1)
 emission_enabled = true
-emission = Color(1.0, 0.85, 0.2)
+emission = Color(1.0, 0.85, 0.2, 1)
 emission_energy_multiplier = 0.6
 metallic = 0.85
 roughness = 0.25

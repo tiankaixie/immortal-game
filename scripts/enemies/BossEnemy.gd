@@ -35,6 +35,9 @@ signal boss_defeated()
 signal phase_changed(phase: int)
 
 func _ready() -> void:
+	model_type = "boss"
+	model_scale = 1.8
+	super()
 	# Boss stats
 	max_hp = 500.0
 	attack_power = 35.0

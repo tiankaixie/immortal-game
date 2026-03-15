@@ -77,7 +77,7 @@ func _check_unlocks() -> void:
 	if new_unlocks.size() > 0:
 		var notif_scene := load(UNLOCK_NOTIFICATION_PATH)
 		if notif_scene:
-			var notif := notif_scene.instantiate()
+			var notif: Node = notif_scene.instantiate()
 			notif.setup(new_unlocks)
 			# Use a CanvasLayer to ensure it renders on top
 			var canvas := CanvasLayer.new()

@@ -79,13 +79,13 @@ func _flash_enemy_red(enemy: Node3D) -> void:
 		return
 	for child in enemy.get_children():
 		if child is MeshInstance3D:
-			var mat := child.get_active_material(0)
+			var mat: Material = child.get_active_material(0)
 			if mat is StandardMaterial3D:
-				mat = mat.duplicate()
-				mat.emission_enabled = true
-				mat.emission = Color(1.0, 0.1, 0.1)
-				mat.emission_energy_multiplier = 3.0
-				child.set_surface_override_material(0, mat)
+				var smat: StandardMaterial3D = mat.duplicate()
+				smat.emission_enabled = true
+				smat.emission = Color(1.0, 0.1, 0.1)
+				smat.emission_energy_multiplier = 3.0
+				child.set_surface_override_material(0, smat)
 
 func _restore_enemy_color(enemy: Node3D) -> void:
 	"""Remove the red flash from enemy mesh."""
@@ -100,16 +100,16 @@ func _set_enemy_transparency(enemy: Node3D, alpha: float) -> void:
 	"""Set transparency on enemy meshes."""
 	for child in enemy.get_children():
 		if child is MeshInstance3D:
-			var mat := child.get_active_material(0)
+			var mat: Material = child.get_active_material(0)
 			if mat is StandardMaterial3D:
-				mat = mat.duplicate()
+				var smat: StandardMaterial3D = mat.duplicate()
 				if alpha < 1.0:
-					mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-					mat.albedo_color.a = alpha
+					smat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+					smat.albedo_color.a = alpha
 				else:
-					mat.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED
-					mat.albedo_color.a = 1.0
-				child.set_surface_override_material(0, mat)
+					smat.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED
+					smat.albedo_color.a = 1.0
+				child.set_surface_override_material(0, smat)
 
 func _flash_warning() -> void:
 	"""Show a brief red flash overlay to warn the player of ambush."""

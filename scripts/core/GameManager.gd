@@ -120,15 +120,20 @@ func grant_random_equipment(luck_modifier: float = 2.0) -> Dictionary:
 # ─── Scene Transitions ────────────────────────────────────────
 func goto_scene(scene_path: String) -> void:
 	"""Deferred scene change to avoid mid-frame issues."""
-	# TODO: Add transition animation (fade to black)
+	print("[GameManager] goto_scene called: %s" % scene_path)
 	call_deferred("_deferred_goto_scene", scene_path)
 
 func _deferred_goto_scene(scene_path: String) -> void:
+	print("[GameManager] _deferred_goto_scene: %s" % scene_path)
 	get_tree().current_scene.free()
 	var packed_scene := load(scene_path) as PackedScene
+	if packed_scene == null:
+		push_error("[GameManager] Failed to load scene: %s" % scene_path)
+		return
 	var new_scene := packed_scene.instantiate()
 	get_tree().root.add_child(new_scene)
 	get_tree().current_scene = new_scene
+	print("[GameManager] Scene loaded successfully: %s" % scene_path)
 
 # ─── Save/Load ─────────────────────────────────────────────────
 func has_save_file() -> bool:

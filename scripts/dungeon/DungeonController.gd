@@ -93,6 +93,8 @@ const ROOM_TYPE_COLORS: Dictionary = {
 	RoomType.BOSS: Color(0.9, 0.2, 0.2),
 }
 
+const AtmosphereScript = preload("res://scripts/dungeon/DungeonAtmosphere.gd")
+
 # ─── State ─────────────────────────────────────────────────────
 var current_room_number: int = 1
 var current_room_type: RoomType = RoomType.NORMAL
@@ -107,6 +109,7 @@ var last_boss_loot: Dictionary = {}
 # Fade overlay
 var fade_overlay: ColorRect = null
 var fade_canvas: CanvasLayer = null
+var atmosphere: Node = null
 
 # Next-room prompt
 var prompt_canvas: CanvasLayer = null
@@ -167,6 +170,9 @@ func _connect_room_manager() -> void:
 		rm.room_cleared.connect(_on_room_cleared)
 		print("[DungeonController] Connected to RoomManager")
 
+	# Setup dungeon atmosphere for the first room
+	_setup_atmosphere("normal")
+
 	# Initialize room counter and type
 	GameManager.current_room = current_room_number
 	current_room_type = _determine_room_type(current_room_number)
@@ -214,11 +220,17 @@ func _show_next_room_prompt() -> void:
 	prompt_canvas.layer = 15
 	add_child(prompt_canvas)
 
+	# Fade wrapper (CanvasLayer has no modulate)
+	var fade_root := Control.new()
+	fade_root.name = "FadeRoot"
+	fade_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	prompt_canvas.add_child(fade_root)
+
 	# Semi-transparent background
 	var bg := ColorRect.new()
 	bg.color = Color(0, 0, 0, 0.4)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	prompt_canvas.add_child(bg)
+	fade_root.add_child(bg)
 
 	# Center container
 	var vbox := VBoxContainer.new()
@@ -230,7 +242,7 @@ func _show_next_room_prompt() -> void:
 	vbox.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	vbox.grow_vertical = Control.GROW_DIRECTION_BOTH
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	prompt_canvas.add_child(vbox)
+	fade_root.add_child(vbox)
 
 	var label := Label.new()
 	label.text = "✦ 第 %d 间已清除 ✦" % current_room_number
@@ -251,9 +263,9 @@ func _show_next_room_prompt() -> void:
 	vbox.add_child(btn)
 
 	# Fade in
-	prompt_canvas.modulate = Color(1, 1, 1, 0)
+	fade_root.modulate = Color(1, 1, 1, 0)
 	var tween := create_tween()
-	tween.tween_property(prompt_canvas, "modulate:a", 1.0, 0.3)
+	tween.tween_property(fade_root, "modulate:a", 1.0, 0.3)
 
 func _on_next_room_pressed() -> void:
 	"""Player confirmed — transition to next room."""
@@ -320,11 +332,13 @@ func _swap_room() -> void:
 		_connect_boss_signals()
 	else:
 		# Remove default static enemies from room template (Enemy1, Enemy2, etc.)
+		# Must use remove_child + queue_free so RoomManager doesn't count them
 		var static_enemies: Array[Node] = []
 		for child in room_node.get_children():
 			if child.has_method("take_damage") and child.name != "Player":
 				static_enemies.append(child)
 		for e in static_enemies:
+			room_node.remove_child(e)
 			e.queue_free()
 
 		if is_elite_room:
@@ -360,10 +374,23 @@ func _swap_room() -> void:
 		if enemies.size() > 0:
 			CombatSystem.start_combat(player, enemies)
 
-	# Re-connect RoomManager
+	# Re-connect RoomManager and force re-initialize enemy tracking
+	# (deferred _initialize_room may run before enemies are spawned)
 	var rm := room_node.find_child("RoomManager", true, false)
 	if rm and rm.has_signal("room_cleared"):
 		rm.room_cleared.connect(_on_room_cleared)
+		# Force re-initialize: count all current enemies in the room
+		rm.is_cleared = false
+		var tracked_enemies: Array = []
+		for child in room_node.get_children():
+			if child.has_signal("defeated") and child.name != "Player":
+				tracked_enemies.append(child)
+		rm.total_enemies = tracked_enemies.size()
+		rm.enemies_alive = tracked_enemies.size()
+		for enemy in tracked_enemies:
+			if not enemy.defeated.is_connected(rm._on_enemy_defeated):
+				enemy.defeated.connect(rm._on_enemy_defeated)
+		print("[DungeonController] RoomManager re-initialized: %d enemies" % rm.total_enemies)
 
 	# Spawn merchant if this is a shop room
 	if current_room_number == shop_room_number:
@@ -373,6 +400,14 @@ func _swap_room() -> void:
 	current_room_type = _determine_room_type(current_room_number)
 	room_number_changed.emit(current_room_number, MAX_ROOMS)
 	room_type_changed.emit(current_room_type, ROOM_TYPE_NAMES.get(current_room_type, "普通间"))
+
+	# Setup atmosphere for the new room
+	var atmo_type := "normal"
+	match current_room_type:
+		RoomType.BOSS: atmo_type = "boss"
+		RoomType.TREASURE: atmo_type = "treasure"
+		RoomType.ELITE: atmo_type = "elite"
+	_setup_atmosphere(atmo_type)
 
 	# Update dungeon progress bar on HUD
 	var hud_ref := main.find_child("HUD", true, false)
@@ -517,6 +552,17 @@ func _on_return_to_menu() -> void:
 	"""End the run and go back to main menu."""
 	GameManager.end_run(true)
 	GameManager.goto_scene(MAIN_MENU_PATH)
+
+# ─── Atmosphere ───────────────────────────────────────────────
+func _setup_atmosphere(room_type: String) -> void:
+	"""Create or refresh dungeon atmosphere for the current room."""
+	if atmosphere and is_instance_valid(atmosphere):
+		atmosphere.cleanup()
+		atmosphere.queue_free()
+	atmosphere = AtmosphereScript.new()
+	atmosphere.name = "DungeonAtmosphere"
+	get_tree().current_scene.add_child(atmosphere)
+	atmosphere.setup(room_type)
 
 # ─── Room Type Logic ──────────────────────────────────────────
 func _determine_room_type(room_num: int) -> RoomType:
