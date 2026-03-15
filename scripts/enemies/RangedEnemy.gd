@@ -20,7 +20,7 @@ var ranged_attack_timer: float = 0.0
 
 func _ready() -> void:
 	model_type = "ranged"
-	model_scale = 0.8
+	model_scale = 0.6
 	super()
 	# Override base stats for ranged type
 	max_hp = 35.0

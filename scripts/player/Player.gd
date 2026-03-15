@@ -7,7 +7,7 @@ extends CharacterBody3D
 ## - Sprint (Shift) and dash (Space/double-tap)
 ## - Animation states: Idle, Walk, Run, Dash
 ## - Integrates with PlayerData for stats
-## - Auto-battle toggle (Q key)
+## - Auto-battle toggle (X key)
 
 const CharacterModelScript = preload("res://scripts/core/CharacterModel.gd")
 
@@ -87,7 +87,7 @@ func _setup_character_model() -> void:
 	character_model = CharacterModelScript.new()
 	character_model.name = "CharacterModel"
 	add_child(character_model)
-	character_model.load_model("player", 0.9)
+	character_model.load_model("player", 0.65)
 	character_model.rotation.y = PI  # Face away from camera (forward)
 	if character_model.mesh_instance:
 		mesh.visible = false
@@ -111,15 +111,15 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("toggle_auto_battle"):
 		CombatSystem.toggle_auto_battle()
 
-	# Skill hotkeys [1]-[4] — check both keycode and physical_keycode for IME compat
+	# Skill hotkeys Q/E/R/T — check both keycode and physical_keycode for IME compat
 	if event is InputEventKey and event.pressed and not event.echo:
 		var hotkey_index := -1
 		var key: int = event.keycode if event.keycode != 0 else event.physical_keycode
 		match key:
-			KEY_1: hotkey_index = 0
-			KEY_2: hotkey_index = 1
-			KEY_3: hotkey_index = 2
-			KEY_4: hotkey_index = 3
+			KEY_Q: hotkey_index = 0
+			KEY_E: hotkey_index = 1
+			KEY_R: hotkey_index = 2
+			KEY_T: hotkey_index = 3
 		if hotkey_index >= 0:
 			_use_skill_hotkey(hotkey_index)
 

@@ -15,7 +15,7 @@ var offset_timer: float = 0.0
 
 func _ready() -> void:
 	model_type = "swarm"
-	model_scale = 0.5
+	model_scale = 0.4
 	super()
 	# Override base stats for swarm type
 	max_hp = 20.0

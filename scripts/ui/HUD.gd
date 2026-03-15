@@ -192,7 +192,7 @@ func _on_cultivation_advanced(_realm: int, _stage: int) -> void:
 # ─── Display Helpers ───────────────────────────────────────────
 func _update_auto_battle_display(enabled: bool) -> void:
 	if auto_battle_label:
-		auto_battle_label.text = "⚔ 自动战斗: %s  [Q]" % ("开" if enabled else "关")
+		auto_battle_label.text = "⚔ 自动战斗: %s  [X]" % ("开" if enabled else "关")
 		auto_battle_label.modulate = Color.GREEN if enabled else Color(0.6, 0.6, 0.6)
 
 func _update_realm_display() -> void:
@@ -557,6 +557,8 @@ func refresh_skill_panel() -> void:
 	var theme_color: Color = SPIRIT_ROOT_COLORS.get(PlayerData.spiritual_root, DEFAULT_HP_COLOR)
 	_apply_theme_to_skill_tiles(theme_color)
 
+const SKILL_HOTKEY_LABELS: Array[String] = ["Q", "E", "R", "T"]
+
 func _create_skill_tile(skill: Dictionary, hotkey: int) -> PanelContainer:
 	"""Create a single skill tile showing icon placeholder, name, SP cost, and hotkey."""
 	var panel := PanelContainer.new()
@@ -581,7 +583,8 @@ func _create_skill_tile(skill: Dictionary, hotkey: int) -> PanelContainer:
 	vbox.add_child(top)
 
 	var hotkey_label := Label.new()
-	hotkey_label.text = "[%d]" % hotkey
+	var key_text: String = SKILL_HOTKEY_LABELS[hotkey - 1] if hotkey >= 1 and hotkey <= SKILL_HOTKEY_LABELS.size() else str(hotkey)
+	hotkey_label.text = "[%s]" % key_text
 	hotkey_label.add_theme_font_size_override("font_size", 11)
 	hotkey_label.add_theme_color_override("font_color", Color(0.9, 0.8, 0.4))
 	top.add_child(hotkey_label)

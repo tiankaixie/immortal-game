@@ -23,7 +23,7 @@ var is_charging: bool = false
 
 func _ready() -> void:
 	model_type = "tank"
-	model_scale = 1.2
+	model_scale = 0.9
 	super()
 	# Override base stats for tank type
 	max_hp = 120.0

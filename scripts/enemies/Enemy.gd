@@ -30,7 +30,7 @@ var player_ref: CharacterBody3D = null
 
 # ─── Model Type (override in subclass for different models) ───
 var model_type: String = "enemy"
-var model_scale: float = 1.0
+var model_scale: float = 0.7
 
 # ─── Node References ──────────────────────────────────────────
 @onready var nav_agent: NavigationAgent3D = $NavigationAgent3D

@@ -2,7 +2,7 @@ extends Area3D
 ## Merchant NPC — Dungeon mid-run trader
 ##
 ## Appears in shop rooms between combat rooms.
-## Player presses E or walks into interaction range to open the shop UI.
+## Player presses F or walks into interaction range to open the shop UI.
 ## Uses TradeSystem.generate_dungeon_merchant_stock() for inventory.
 
 # ─── Config ───────────────────────────────────────────────────
@@ -62,7 +62,7 @@ func _create_visual() -> void:
 
 	# Interaction prompt (hidden until player is near)
 	prompt_label = Label3D.new()
-	prompt_label.text = "[E] 交易"
+	prompt_label.text = "[F] 交易"
 	prompt_label.font_size = 36
 	prompt_label.position = Vector3(0, 1.5, 0)
 	prompt_label.modulate = Color(0.8, 1.0, 0.8, 0.0)  # Start invisible
@@ -103,13 +103,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not player_in_range or shop_open:
 		return
 
-	# Check for interact key (E) — use action + physical_keycode fallback for IME compat
+	# Check for interact key (F) — use action + physical_keycode fallback for IME compat
 	if event.is_action_pressed("interact"):
 		_open_shop()
 		get_viewport().set_input_as_handled()
 	elif event is InputEventKey and event.pressed and not event.echo:
 		var key: int = event.keycode if event.keycode != 0 else event.physical_keycode
-		if key == KEY_E:
+		if key == KEY_F:
 			_open_shop()
 			get_viewport().set_input_as_handled()
 

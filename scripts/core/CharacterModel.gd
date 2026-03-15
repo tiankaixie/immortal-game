@@ -5,14 +5,27 @@ extends Node3D
 
 ## Map of character type → glTF resource path
 const MODEL_PATHS: Dictionary = {
-	"player": "res://assets/characters/Ninja.gltf",
-	"enemy": "res://assets/characters/Demon.gltf",
-	"swarm": "res://assets/characters/Frog.gltf",
-	"ranged": "res://assets/characters/Alien.gltf",
-	"tank": "res://assets/characters/Orc.gltf",
-	"elite": "res://assets/characters/BlueDemon.gltf",
-	"boss": "res://assets/characters/Dino.gltf",
-	"tribulation": "res://assets/characters/MushroomKing.gltf",
+	"player": "res://assets/kaykit/adventurers/Knight.glb",
+	"enemy": "res://assets/kaykit/skeletons/Skeleton_Warrior.glb",
+	"swarm": "res://assets/kaykit/skeletons/Skeleton_Minion.glb",
+	"ranged": "res://assets/kaykit/skeletons/Skeleton_Mage.glb",
+	"tank": "res://assets/kaykit/skeletons/Skeleton_Warrior.glb",
+	"elite": "res://assets/kaykit/skeletons/Skeleton_Rogue.glb",
+	"boss": "res://assets/kaykit/adventurers/Barbarian.glb",
+	"tribulation": "res://assets/kaykit/adventurers/Barbarian.glb",
+}
+
+## Animation name mapping — KayKit models use different names than our game.
+## Each game anim name maps to a list of possible KayKit alternatives (tried in order).
+const ANIM_MAP: Dictionary = {
+	"Idle": ["Idle", "Idle_Combat", "Unarmed_Idle"],
+	"Walk": ["Walking_A", "Walking_B", "Walking_C", "Walk"],
+	"Run": ["Running_A", "Running_B", "Running_C", "Run"],
+	"Jump": ["Jump_Full_Short", "Jump_Full_Long", "Jump_Start", "Dodge_Forward"],
+	"Death": ["Death_A", "Death_B", "Death_C_Skeletons"],
+	"Punch": ["1H_Melee_Attack_Slice_Diagonal", "1H_Melee_Attack_Chop", "1H_Melee_Attack_Stab", "Unarmed_Melee_Attack_Punch_A"],
+	"HitReact": ["Hit_A", "Hit_B", "Block_Hit"],
+	"Weapon": ["2H_Melee_Attack_Chop", "2H_Melee_Attack_Slice", "2H_Melee_Attack_Spin", "Dualwield_Melee_Attack_Chop"],
 }
 
 var mesh_instance: MeshInstance3D = null
@@ -36,6 +49,8 @@ func load_model(model_type: String, model_scale: float = 1.0) -> Node3D:
 				add_child(_model_root)
 				_find_nodes(_model_root)
 				if anim_player:
+					var anim_list := anim_player.get_animation_list()
+					print("[CharacterModel] %s animations: %s" % [model_type, str(anim_list)])
 					play("Idle")
 				print("[CharacterModel] Loaded %s via resource" % model_type)
 				return self
@@ -66,6 +81,8 @@ func load_model(model_type: String, model_scale: float = 1.0) -> Node3D:
 	_find_nodes(_model_root)
 
 	if anim_player:
+		var anim_list := anim_player.get_animation_list()
+		print("[CharacterModel] %s animations: %s" % [model_type, str(anim_list)])
 		play("Idle")
 
 	print("[CharacterModel] Loaded %s via GLTFDocument" % model_type)
@@ -79,14 +96,28 @@ func _find_nodes(node: Node) -> void:
 	for child in node.get_children():
 		_find_nodes(child)
 
+## Resolve an animation name through ANIM_MAP fallback.
+func _resolve_anim(anim_name: String) -> String:
+	if anim_player == null:
+		return anim_name
+	if anim_player.has_animation(anim_name):
+		return anim_name
+	# Try ANIM_MAP alternatives
+	if ANIM_MAP.has(anim_name):
+		for alt: String in ANIM_MAP[anim_name]:
+			if anim_player.has_animation(alt):
+				return alt
+	return ""
+
 ## Play an animation by name with optional crossfade.
 func play(anim_name: String, crossfade: float = 0.2) -> void:
-	if anim_player and anim_player.has_animation(anim_name):
-		anim_player.play(anim_name, crossfade)
+	var resolved := _resolve_anim(anim_name)
+	if resolved != "" and anim_player:
+		anim_player.play(resolved, crossfade)
 
-## Check if an animation exists.
+## Check if an animation exists (including ANIM_MAP alternatives).
 func has_animation(anim_name: String) -> bool:
-	return anim_player != null and anim_player.has_animation(anim_name)
+	return _resolve_anim(anim_name) != ""
 
 ## Get surface override material (backward compat with old mesh usage).
 func get_surface_override_material(index: int) -> Material:

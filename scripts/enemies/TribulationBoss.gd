@@ -52,7 +52,7 @@ signal phase_changed(phase: int)
 
 func _ready() -> void:
 	model_type = "tribulation"
-	model_scale = 2.0
+	model_scale = 1.5
 	super()
 	max_hp = 700.0
 	attack_power = 45.0

@@ -34,7 +34,7 @@ signal elite_defeated()
 
 func _ready() -> void:
 	model_type = "elite"
-	model_scale = 1.3
+	model_scale = 1.0
 	super()  # Call Enemy._ready() for add_to_group("enemies") etc.
 	# Elite stats — 幽冥蛛后
 	max_hp = 200.0

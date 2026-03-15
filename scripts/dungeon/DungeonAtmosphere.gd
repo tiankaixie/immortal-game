@@ -47,11 +47,17 @@ var dust_particles: GPUParticles3D = null
 var torch_lights: Array[OmniLight3D] = []
 var decorations: Array[Node3D] = []
 
-# Decorative props to scatter around rooms (glb files from Kenney)
+# Decorative props to scatter around rooms (glb files from Kenney + KayKit dungeon)
 const WALL_PROPS: Array[String] = [
 	"res://assets/environments/banner.glb",
 	"res://assets/environments/shield-round.glb",
 	"res://assets/environments/wood-support.glb",
+	"res://assets/kaykit/dungeon/banner_red.gltf.glb",
+	"res://assets/kaykit/dungeon/banner_blue.gltf.glb",
+	"res://assets/kaykit/dungeon/banner_shield_red.gltf.glb",
+	"res://assets/kaykit/dungeon/sword_shield.gltf.glb",
+	"res://assets/kaykit/dungeon/shelf_small_candles.gltf.glb",
+	"res://assets/kaykit/dungeon/keyring_hanging.gltf.glb",
 ]
 const CORNER_PROPS: Array[String] = [
 	"res://assets/environments/barrel.glb",
@@ -59,9 +65,24 @@ const CORNER_PROPS: Array[String] = [
 	"res://assets/environments/stones.glb",
 	"res://assets/environments/chest.glb",
 	"res://assets/environments/wood-structure.glb",
+	"res://assets/kaykit/dungeon/barrel_large.gltf.glb",
+	"res://assets/kaykit/dungeon/barrel_small_stack.gltf.glb",
+	"res://assets/kaykit/dungeon/keg.gltf.glb",
+	"res://assets/kaykit/dungeon/crates_stacked.gltf.glb",
+	"res://assets/kaykit/dungeon/box_stacked.gltf.glb",
+	"res://assets/kaykit/dungeon/trunk_large_A.gltf.glb",
+	"res://assets/kaykit/dungeon/rubble_large.gltf.glb",
+	"res://assets/kaykit/dungeon/stool.gltf.glb",
+	"res://assets/kaykit/dungeon/bed_floor.gltf.glb",
+	"res://assets/kaykit/dungeon/candle_triple.gltf.glb",
 ]
 const CENTER_PROPS: Array[String] = [
 	"res://assets/environments/column.glb",
+	"res://assets/kaykit/dungeon/column.gltf.glb",
+	"res://assets/kaykit/dungeon/pillar.gltf.glb",
+	"res://assets/kaykit/dungeon/pillar_decorated.gltf.glb",
+	"res://assets/kaykit/dungeon/table_medium.gltf.glb",
+	"res://assets/kaykit/dungeon/table_small.gltf.glb",
 ]
 
 func setup(room_type: String = "normal", room_size: Vector2 = Vector2(20, 20)) -> void:
@@ -292,7 +313,6 @@ func _place_decorations(room_size: Vector2) -> void:
 	"""Scatter decorative props around the room edges and corners."""
 	var half_x: float = room_size.x * 0.4
 	var half_z: float = room_size.y * 0.4
-	var gltf_doc := GLTFDocument.new()
 
 	# Place corner props (barrels, rocks, etc.)
 	var corners: Array[Vector3] = [
@@ -304,7 +324,7 @@ func _place_decorations(room_size: Vector2) -> void:
 	for corner in corners:
 		if randf() < 0.7 and CORNER_PROPS.size() > 0:
 			var prop_path: String = CORNER_PROPS[randi() % CORNER_PROPS.size()]
-			_spawn_prop(gltf_doc, prop_path, corner, randf() * TAU, 1.5)
+			_spawn_prop(prop_path, corner, randf() * TAU, 1.5)
 
 	# Place wall props along walls
 	var wall_spots: Array[Vector3] = [
@@ -316,11 +336,12 @@ func _place_decorations(room_size: Vector2) -> void:
 	for spot in wall_spots:
 		if randf() < 0.5 and WALL_PROPS.size() > 0:
 			var prop_path: String = WALL_PROPS[randi() % WALL_PROPS.size()]
-			_spawn_prop(gltf_doc, prop_path, spot, randf() * TAU, 1.2)
+			_spawn_prop(prop_path, spot, randf() * TAU, 1.2)
 
 	# Place 1-2 columns near center area (but not blocking center)
 	for _i in range(randi_range(1, 2)):
 		if CENTER_PROPS.size() > 0:
+			var prop_idx: int = randi() % CENTER_PROPS.size()
 			var offset := Vector3(
 				randf_range(-half_x * 0.3, half_x * 0.3),
 				0,
@@ -328,16 +349,28 @@ func _place_decorations(room_size: Vector2) -> void:
 			)
 			# Don't place too close to center (player spawn)
 			if offset.length() > 3.0:
-				_spawn_prop(gltf_doc, CENTER_PROPS[0], offset, 0.0, 2.0)
+				_spawn_prop(CENTER_PROPS[prop_idx], offset, 0.0, 2.0)
 
-func _spawn_prop(gltf_doc: GLTFDocument, path: String, pos: Vector3, rot_y: float, prop_scale: float) -> void:
-	"""Load a .glb prop via GLTFDocument and place it in the scene."""
-	var abs_path: String = ProjectSettings.globalize_path(path)
-	var state := GLTFState.new()
-	var err: int = gltf_doc.append_from_file(abs_path, state)
-	if err != OK:
-		return
-	var scene: Node = gltf_doc.generate_scene(state)
+func _spawn_prop(path: String, pos: Vector3, rot_y: float, prop_scale: float) -> void:
+	"""Load a .glb prop and place it in the scene."""
+	var scene: Node = null
+
+	# Try standard resource loading first (works for imported .glb files)
+	if ResourceLoader.exists(path):
+		var packed: PackedScene = load(path) as PackedScene
+		if packed:
+			scene = packed.instantiate()
+
+	# Fallback: GLTFDocument runtime loading (fresh instance each time)
+	if scene == null:
+		var abs_path: String = ProjectSettings.globalize_path(path)
+		var gltf_doc := GLTFDocument.new()
+		var state := GLTFState.new()
+		var err: int = gltf_doc.append_from_file(abs_path, state)
+		if err != OK:
+			return
+		scene = gltf_doc.generate_scene(state)
+
 	if scene == null:
 		return
 	var wrapper := Node3D.new()
