@@ -5,6 +5,8 @@ extends CharacterBody3D
 ## Uses NavigationAgent3D for pathfinding
 ## Connects to CombatSystem for damage
 
+const CharacterModelScript = preload("res://scripts/core/CharacterModel.gd")
+
 # ─── Constants ─────────────────────────────────────────────────
 @export var max_hp: float = 50.0
 @export var attack_power: float = 8.0
@@ -26,11 +28,17 @@ var current_hp: float = 50.0
 var attack_timer: float = 0.0
 var player_ref: CharacterBody3D = null
 
+# ─── Model Type (override in subclass for different models) ───
+var model_type: String = "enemy"
+var model_scale: float = 1.0
+
 # ─── Node References ──────────────────────────────────────────
 @onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
 @onready var mesh: MeshInstance3D = $MeshInstance3D
 @onready var collision: CollisionShape3D = $CollisionShape3D
 @onready var hp_label: Label3D = $HPLabel
+var character_model: Node3D = null
+var anim_player: AnimationPlayer = null
 
 # ─── Signals ───────────────────────────────────────────────────
 signal hp_changed(current: float, maximum: float)
@@ -40,6 +48,7 @@ func _ready() -> void:
 	add_to_group("enemies")
 	current_hp = max_hp
 	_update_hp_label()
+	_setup_character_model()
 
 	# NavigationAgent3D setup
 	nav_agent.path_desired_distance = 1.0
@@ -47,6 +56,20 @@ func _ready() -> void:
 
 	# Find player in scene tree (deferred to ensure scene is ready)
 	call_deferred("_find_player")
+
+func _setup_character_model() -> void:
+	"""Load 3D character model, hide placeholder capsule."""
+	character_model = CharacterModelScript.new()
+	character_model.name = "CharacterModel"
+	add_child(character_model)
+	character_model.load_model(model_type, model_scale)
+	if character_model.mesh_instance:
+		# Hide old capsule mesh
+		if mesh:
+			mesh.visible = false
+		# Keep mesh ref pointing to new model's MeshInstance3D for material effects
+		mesh = character_model.mesh_instance
+		anim_player = character_model.anim_player
 
 func _find_player() -> void:
 	# Try to find player node
@@ -158,6 +181,10 @@ func _perform_attack() -> void:
 	if player_ref == null or not player_ref.has_method("take_damage"):
 		return
 
+	# Play attack animation each swing
+	if character_model != null:
+		character_model.play("Punch", 0.1)
+
 	var damage_info := CombatSystem.calculate_damage(attack_power, PlayerData.get_total_defense(), 1.0)
 	player_ref.take_damage(damage_info["amount"])
 	CombatSystem.damage_dealt.emit(player_ref, damage_info["amount"], damage_info["is_critical"])
@@ -175,6 +202,10 @@ func take_damage(amount: float) -> void:
 	hp_changed.emit(current_hp, max_hp)
 	_update_hp_label()
 
+	# Play hit reaction animation
+	if character_model != null and current_hp > 0.0:
+		character_model.play("HitReact", 0.1)
+
 	# Aggro on hit
 	if current_state == AIState.IDLE:
 		_change_state(AIState.CHASE)
@@ -188,15 +219,22 @@ func _die() -> void:
 	CombatSystem.on_enemy_defeated(self)
 
 	# Visual feedback — turn dark and disable collision
-	var mat := mesh.get_surface_override_material(0)
+	var mat: Material = mesh.get_surface_override_material(0)
 	if mat is StandardMaterial3D:
 		mat.albedo_color = Color(0.2, 0.2, 0.2, 0.5)
 		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	elif mat == null:
+		# glTF mesh: create a new dark override material
+		var death_mat := StandardMaterial3D.new()
+		death_mat.albedo_color = Color(0.2, 0.2, 0.2, 0.5)
+		death_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mesh.set_surface_override_material(0, death_mat)
 
 	collision.set_deferred("disabled", true)
 
-	# Remove after short delay
+	# Wait for Death animation, then sink and remove
 	var tween := create_tween()
+	tween.tween_interval(1.5)  # Let Death animation play
 	tween.tween_property(self, "global_position:y", global_position.y - 1.0, 0.8)
 	tween.tween_callback(queue_free)
 
@@ -205,6 +243,20 @@ func _die() -> void:
 # ─── Helpers ───────────────────────────────────────────────────
 func _change_state(new_state: AIState) -> void:
 	current_state = new_state
+	_play_state_animation(new_state)
+
+func _play_state_animation(state: AIState) -> void:
+	if character_model == null:
+		return
+	match state:
+		AIState.IDLE:
+			character_model.play("Idle")
+		AIState.CHASE:
+			character_model.play("Run")
+		AIState.ATTACK:
+			character_model.play("Punch")
+		AIState.DEAD:
+			character_model.play("Death")
 
 func _update_hp_label() -> void:
 	if hp_label:

@@ -9,6 +9,8 @@ extends CharacterBody3D
 ## - Integrates with PlayerData for stats
 ## - Auto-battle toggle (Q key)
 
+const CharacterModelScript = preload("res://scripts/core/CharacterModel.gd")
+
 # ─── Movement Constants ────────────────────────────────────────
 const WALK_SPEED: float = 5.0
 const RUN_SPEED: float = 8.5
@@ -39,6 +41,9 @@ var dash_timer: float = 0.0
 var dash_cooldown_timer: float = 0.0
 var dash_direction: Vector3 = Vector3.ZERO
 
+# Combat animation lock — prevents movement anims from overriding attack/skill anims
+var _combat_anim_lock: float = 0.0
+
 # Camera
 var camera_yaw: float = 0.0
 var camera_pitch: float = -0.5
@@ -48,6 +53,8 @@ var camera_pitch: float = -0.5
 @onready var camera: Camera3D = $SpringArm3D/Camera3D
 @onready var mesh: MeshInstance3D = $MeshInstance3D
 @onready var collision: CollisionShape3D = $CollisionShape3D
+var character_model: Node3D = null
+var anim_player: AnimationPlayer = null
 
 # ─── Signals ───────────────────────────────────────────────────
 signal hp_changed(current: float, maximum: float)
@@ -65,12 +72,26 @@ func _ready() -> void:
 	# Listen for SP changes from PlayerData
 	PlayerData.sp_updated.connect(_on_sp_updated)
 
+	# Load 3D character model
+	_setup_character_model()
+
 	# Capture mouse for camera control
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 	hp_changed.emit(current_hp, max_hp)
 	sp_changed.emit(current_sp, max_sp)
 	print("[Player] Ready — HP: %.0f, SP: %.0f/%.0f" % [max_hp, current_sp, max_sp])
+
+func _setup_character_model() -> void:
+	"""Load 3D character model, hide placeholder capsule."""
+	character_model = CharacterModelScript.new()
+	character_model.name = "CharacterModel"
+	add_child(character_model)
+	character_model.load_model("player", 0.9)
+	character_model.rotation.y = PI  # Face away from camera (forward)
+	if character_model.mesh_instance:
+		mesh.visible = false
+		anim_player = character_model.anim_player
 
 func _unhandled_input(event: InputEvent) -> void:
 	# Camera rotation via mouse
@@ -106,6 +127,10 @@ func _physics_process(delta: float) -> void:
 	_update_camera()
 	_update_dash_timers(delta)
 
+	# Tick combat animation lock
+	if _combat_anim_lock > 0.0:
+		_combat_anim_lock -= delta
+
 	# Manual attack (left click)
 	if Input.is_action_just_pressed("attack"):
 		var target := _find_nearest_enemy()
@@ -116,6 +141,10 @@ func _physics_process(delta: float) -> void:
 	# Apply gravity
 	if not is_on_floor():
 		velocity.y -= GRAVITY * delta
+
+	# Fall off platform detection — take damage and respawn on platform
+	if global_position.y < -10.0:
+		_on_fall_off_platform()
 
 	if is_dashing:
 		_process_dash(delta)
@@ -156,10 +185,13 @@ func _process_movement(delta: float) -> void:
 	if move_dir.length() > 0.1:
 		velocity.x = move_dir.x * speed
 		velocity.z = move_dir.z * speed
-		# Rotate only the mesh to face movement direction (not the CharacterBody3D,
+		# Rotate model to face movement direction (not the CharacterBody3D,
 		# because SpringArm3D is a child and would shift the camera basis)
 		var target_rot := atan2(move_dir.x, move_dir.z)
-		mesh.rotation.y = lerp_angle(mesh.rotation.y, target_rot, ROTATION_SPEED * delta)
+		if character_model:
+			character_model.rotation.y = lerp_angle(character_model.rotation.y, target_rot, ROTATION_SPEED * delta)
+		else:
+			mesh.rotation.y = lerp_angle(mesh.rotation.y, target_rot, ROTATION_SPEED * delta)
 	else:
 		velocity.x = move_toward(velocity.x, 0.0, speed * delta * 5.0)
 		velocity.z = move_toward(velocity.z, 0.0, speed * delta * 5.0)
@@ -192,7 +224,17 @@ func _update_dash_timers(delta: float) -> void:
 			is_dashing = false
 
 # ─── Animation State Machine ──────────────────────────────────
+func play_combat_anim(anim_name: String, duration: float = 0.6) -> void:
+	"""Play a combat animation and lock out movement anims for duration."""
+	if character_model != null:
+		character_model.play(anim_name, 0.1)
+		_combat_anim_lock = duration
+
 func _update_animation_state() -> void:
+	# Don't override combat animations (attack/skill/hit)
+	if _combat_anim_lock > 0.0:
+		return
+
 	var new_state: AnimState
 	var horizontal_speed := Vector2(velocity.x, velocity.z).length()
 
@@ -208,13 +250,27 @@ func _update_animation_state() -> void:
 	if new_state != current_anim_state:
 		current_anim_state = new_state
 		anim_state_changed.emit(new_state)
-		# TODO: Drive AnimationTree parameters here
+		# Drive character model animations
+		if character_model:
+			match new_state:
+				AnimState.IDLE:
+					character_model.play("Idle")
+				AnimState.WALK:
+					character_model.play("Walk")
+				AnimState.RUN:
+					character_model.play("Run")
+				AnimState.DASH:
+					character_model.play("Jump")
 
 # ─── Combat Integration ───────────────────────────────────────
 func take_damage(amount: float) -> void:
 	"""Called by CombatSystem when player takes a hit."""
 	current_hp = max(0.0, current_hp - amount)
 	hp_changed.emit(current_hp, max_hp)
+
+	# Play hit reaction animation
+	if current_hp > 0.0:
+		play_combat_anim("HitReact", 0.4)
 
 	if current_hp <= 0.0:
 		_on_death()
@@ -250,7 +306,12 @@ func _use_skill_hotkey(index: int) -> void:
 				break
 			skills_to_use.append(sid)
 
+	print("[Player] Skill hotkey %d pressed — equipped: %s, unlocked: %s, available: %s" % [
+		index, str(PlayerData.equipped_skills), str(PlayerData.unlocked_skills), str(skills_to_use)
+	])
+
 	if index >= skills_to_use.size():
+		print("[Player] No skill in slot %d" % index)
 		return  # No skill in that slot
 
 	var skill_id: String = skills_to_use[index]
@@ -283,10 +344,22 @@ func _find_nearest_enemy() -> Node:
 				nearest = enemy
 	return nearest
 
+# ─── Fall Detection ───────────────────────────────────────────
+func _on_fall_off_platform() -> void:
+	"""Player fell off the platform — take damage and teleport back."""
+	var fall_damage := max_hp * 0.2  # 20% max HP
+	take_damage(fall_damage)
+	print("[Player] Fell off platform! Took %.0f fall damage" % fall_damage)
+
+	# Teleport back to room center
+	global_position = Vector3(0.0, 2.0, 0.0)
+	velocity = Vector3.ZERO
+
 var _death_triggered: bool = false
 const DEATH_SCREEN_PATH: String = "res://scenes/ui/DeathScreen.tscn"
 
 func _goto_death_screen() -> void:
+	print("[Player] _goto_death_screen called!")
 	GameManager.goto_scene(DEATH_SCREEN_PATH)
 
 func _on_death() -> void:
@@ -296,18 +369,49 @@ func _on_death() -> void:
 	died.emit()
 	print("[Player] Defeated!")
 
-	# Darken screen then transition to DeathScreen
+	# Play death animation
+	if character_model != null:
+		character_model.play("Death", 0.1)
+
+	# Stop combat and player processing
+	CombatSystem.end_combat(false)
+	set_physics_process(false)
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+
+	# Death screen overlay
 	var death_canvas := CanvasLayer.new()
 	death_canvas.layer = 90
-	add_child(death_canvas)
+	get_tree().current_scene.add_child(death_canvas)
 
+	# Full screen dark background
 	var dark_rect := ColorRect.new()
 	dark_rect.color = Color(0, 0, 0, 0)
 	dark_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
 	dark_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	death_canvas.add_child(dark_rect)
 
-	var tween := create_tween()
-	tween.tween_property(dark_rect, "color:a", 0.8, 0.5)
-	tween.tween_interval(0.3)
+	# "道消陨落" death text
+	var death_label := Label.new()
+	death_label.text = "道 消 陨 落"
+	death_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	death_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	death_label.set_anchors_preset(Control.PRESET_CENTER)
+	death_label.anchor_left = 0.5
+	death_label.anchor_top = 0.4
+	death_label.anchor_right = 0.5
+	death_label.anchor_bottom = 0.4
+	death_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	death_label.grow_vertical = Control.GROW_DIRECTION_BOTH
+	death_label.add_theme_font_size_override("font_size", 64)
+	death_label.add_theme_color_override("font_color", Color(0.8, 0.15, 0.15))
+	death_label.modulate.a = 0.0
+	death_canvas.add_child(death_label)
+
+	# Animate: darken → show text → transition
+	print("[Player] Starting death tween animation...")
+	var tween := death_canvas.create_tween()
+	tween.tween_property(dark_rect, "color:a", 0.85, 0.6)
+	tween.parallel().tween_property(death_label, "modulate:a", 1.0, 0.8)
+	tween.tween_interval(1.5)
 	tween.tween_callback(_goto_death_screen)
+	tween.finished.connect(func(): print("[Player] Death tween finished signal"))

@@ -191,6 +191,10 @@ func _perform_basic_attack(target: Node) -> void:
 			damage_dealt.emit(target, damage_info["amount"], damage_info["is_critical"])
 			basic_attack_timer = BASIC_ATTACK_COOLDOWN
 
+			# Play punch animation on player
+			if player_entity != null and player_entity.has_method("play_combat_anim"):
+				player_entity.play_combat_anim("Punch", 0.5)
+
 			# Audio feedback
 			if damage_info["is_critical"]:
 				AudioManager.play_sfx("crit")
@@ -263,9 +267,13 @@ func execute_skill(skill_id: String, target: Node) -> void:
 		push_warning("[CombatSystem] Cannot execute unknown skill: %s" % skill_id)
 		return
 	
-	# Check cooldown
+	# Check cooldown (skip for manual input — player intent overrides auto-battle CD)
 	if skill_cooldowns.has(skill_id) and skill_cooldowns[skill_id] > 0:
-		return  # Still on cooldown, silently skip
+		if current_state == CombatState.MANUAL:
+			# Manual override: clear cooldown so player can use the skill
+			skill_cooldowns[skill_id] = 0.0
+		else:
+			return  # Auto-battle: respect cooldown
 	
 	# Check and spend SP
 	var sp_cost: float = skill["sp_cost"]
@@ -277,7 +285,11 @@ func execute_skill(skill_id: String, target: Node) -> void:
 	
 	# Spend SP
 	PlayerData.spend_sp(sp_cost)
-	
+
+	# Play skill casting animation on player
+	if player_entity != null and player_entity.has_method("play_combat_anim"):
+		player_entity.play_combat_anim("Weapon", 0.8)
+
 	# Calculate base damage
 	var base_attack: float = PlayerData.get_total_attack()
 	var total_damage: float = 0.0
@@ -352,6 +364,10 @@ func execute_skill(skill_id: String, target: Node) -> void:
 			var aoe_center: Vector3 = target.global_position if target != null and is_instance_valid(target) else player_entity.global_position
 			var hit_count: int = 0
 
+			# AoE VFX burst at center
+			var aoe_element: String = skill.get("element", "fire")
+			_spawn_element_vfx(aoe_center, aoe_element)
+
 			for enemy in enemies:
 				if is_instance_valid(enemy):
 					var dist: float = aoe_center.distance_to(enemy.global_position)
@@ -365,6 +381,8 @@ func execute_skill(skill_id: String, target: Node) -> void:
 						damage_dealt.emit(enemy, damage_info["amount"], damage_info["is_critical"])
 						total_damage += damage_info["amount"]
 						hit_count += 1
+						# VFX on each hit enemy
+						_spawn_element_vfx(enemy.global_position, aoe_element)
 
 			print("[CombatSystem] %s used %s — %.1f total damage (%d enemies hit)" % [
 				PlayerData.player_name, skill["name_zh"], total_damage, hit_count
@@ -392,7 +410,12 @@ func execute_skill(skill_id: String, target: Node) -> void:
 					var heal_amount: float = damage_info["amount"] * steal_ratio
 					if player_entity != null and player_entity.has_method("heal"):
 						player_entity.heal(heal_amount)
+					_spawn_element_vfx(target.global_position, "void")
 					print("[CombatSystem] Void Drain healed player for %.1f HP" % heal_amount)
+
+				else:
+					# Generic element VFX for skills without special effects
+					_spawn_element_vfx(target.global_position, skill.get("element", "fire"))
 
 				print("[CombatSystem] %s used %s — %.1f damage%s" % [
 					PlayerData.player_name, skill["name_zh"], total_damage,
@@ -401,6 +424,9 @@ func execute_skill(skill_id: String, target: Node) -> void:
 	else:
 		# Non-damage skill (heal, shield, etc.)
 		_apply_skill_effect(skill)
+		# VFX on player for support skills
+		if player_entity != null:
+			_spawn_element_vfx(player_entity.global_position, skill.get("element", "wood"))
 		print("[CombatSystem] %s used %s" % [PlayerData.player_name, skill["name_zh"]])
 	
 	# Set cooldown
@@ -476,7 +502,13 @@ func _apply_stun(target: Node, duration: float) -> void:
 	if "mesh" in target and target.mesh is MeshInstance3D:
 		var mat: Material = target.mesh.get_surface_override_material(0)
 		if mat is StandardMaterial3D:
+			target.set_meta("stun_original_color", mat.albedo_color)
 			mat.albedo_color = Color(0.9, 0.9, 0.2)
+		elif mat == null:
+			var stun_mat := StandardMaterial3D.new()
+			stun_mat.albedo_color = Color(0.9, 0.9, 0.2, 0.5)
+			stun_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			target.mesh.set_surface_override_material(0, stun_mat)
 
 	# Restore after duration
 	var timer := target.get_tree().create_timer(duration)
@@ -488,7 +520,12 @@ func _apply_stun(target: Node, duration: float) -> void:
 			if "mesh" in target and target.mesh is MeshInstance3D:
 				var mat_restore: Material = target.mesh.get_surface_override_material(0)
 				if mat_restore is StandardMaterial3D:
-					mat_restore.albedo_color = Color(1.0, 0.3, 0.3)  # Reset to red (enemy default)
+					if target.has_meta("stun_original_color"):
+						mat_restore.albedo_color = target.get_meta("stun_original_color")
+						target.remove_meta("stun_original_color")
+					else:
+						# glTF model: remove the override to restore original
+						target.mesh.set_surface_override_material(0, null)
 	)
 	print("[CombatSystem] Stunned %s for %.1fs" % [
 		target.enemy_name if "enemy_name" in target else "enemy", duration
@@ -514,42 +551,89 @@ func _spawn_element_vfx(position: Vector3, element: String) -> void:
 	# Fallback: create an inline GPUParticles3D burst
 	var particles := GPUParticles3D.new()
 	var mat := ParticleProcessMaterial.new()
-	var amount: int = 30
-	var part_lifetime: float = 0.6
+	var amount: int = 80
+	var part_lifetime: float = 0.8
 	match element:
-		"thunder_palm":
-			mat.color = Color(1.0, 0.95, 0.3)   # Bright yellow-white
+		"fire":
+			mat.color = Color(1.0, 0.4, 0.05)   # Orange-red flame
 			mat.initial_velocity_min = 5.0
 			mat.initial_velocity_max = 12.0
+			mat.damping_min = 3.0
+			mat.damping_max = 5.0
+			amount = 120
+			part_lifetime = 0.7
+		"water":
+			mat.color = Color(0.2, 0.6, 1.0)    # Cool blue
+			mat.initial_velocity_min = 4.0
+			mat.initial_velocity_max = 9.0
+			mat.damping_min = 4.0
+			mat.damping_max = 6.0
+			amount = 100
+			part_lifetime = 0.8
+		"metal":
+			mat.color = Color(0.9, 0.9, 1.0)    # Bright silver-white
+			mat.initial_velocity_min = 8.0
+			mat.initial_velocity_max = 16.0
+			mat.damping_min = 5.0
+			mat.damping_max = 8.0
+			amount = 90
+			part_lifetime = 0.4
+		"wood":
+			mat.color = Color(0.3, 1.0, 0.2)    # Bright green
+			mat.initial_velocity_min = 3.0
+			mat.initial_velocity_max = 7.0
+			mat.damping_min = 2.0
+			mat.damping_max = 4.0
+			amount = 100
+			part_lifetime = 1.0
+		"earth":
+			mat.color = Color(0.8, 0.6, 0.2)    # Brown-gold
+			mat.initial_velocity_min = 4.0
+			mat.initial_velocity_max = 8.0
 			mat.damping_min = 6.0
 			mat.damping_max = 10.0
-			amount = 60
-			part_lifetime = 0.4
+			amount = 100
+			part_lifetime = 0.9
+		"thunder_palm":
+			mat.color = Color(1.0, 0.95, 0.3)   # Bright yellow-white
+			mat.initial_velocity_min = 8.0
+			mat.initial_velocity_max = 18.0
+			mat.damping_min = 6.0
+			mat.damping_max = 10.0
+			amount = 150
+			part_lifetime = 0.5
 		"chain_lightning":
 			mat.color = Color(0.3, 0.6, 1.0)    # Electric blue-white
-			mat.initial_velocity_min = 6.0
-			mat.initial_velocity_max = 14.0
+			mat.initial_velocity_min = 10.0
+			mat.initial_velocity_max = 20.0
 			mat.damping_min = 4.0
 			mat.damping_max = 7.0
-			amount = 80
-			part_lifetime = 0.5
+			amount = 160
+			part_lifetime = 0.6
 		"lightning":
-			mat.color = Color(0.7, 0.5, 1.0)   # Purple-white lightning
-			mat.initial_velocity_min = 3.0
-			mat.initial_velocity_max = 6.0
+			mat.color = Color(0.7, 0.5, 1.0)    # Purple-white lightning
+			mat.initial_velocity_min = 6.0
+			mat.initial_velocity_max = 14.0
+			mat.damping_min = 3.0
+			mat.damping_max = 6.0
+			amount = 120
+			part_lifetime = 0.5
 		"void":
-			mat.color = Color(0.4, 0.0, 0.8, 0.8)  # Dark violet
-			mat.initial_velocity_min = 2.0
-			mat.initial_velocity_max = 4.0
+			mat.color = Color(0.5, 0.0, 1.0, 0.9)  # Bright violet
+			mat.initial_velocity_min = 4.0
+			mat.initial_velocity_max = 8.0
+			amount = 100
+			part_lifetime = 0.8
 		_:
 			mat.color = Color(1.0, 0.5, 0.1)
-			mat.initial_velocity_min = 2.0
-			mat.initial_velocity_max = 5.0
+			mat.initial_velocity_min = 4.0
+			mat.initial_velocity_max = 8.0
+			amount = 80
 	mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
-	mat.emission_sphere_radius = 0.3
-	mat.gravity = Vector3(0, 2.0, 0) if element not in ["thunder_palm", "chain_lightning"] else Vector3.ZERO
-	mat.scale_min = 0.05
-	mat.scale_max = 0.15
+	mat.emission_sphere_radius = 0.8
+	mat.gravity = Vector3(0, 3.0, 0) if element not in ["thunder_palm", "chain_lightning", "fire"] else Vector3.ZERO
+	mat.scale_min = 0.15
+	mat.scale_max = 0.4
 	particles.process_material = mat
 	particles.amount = amount
 	particles.lifetime = part_lifetime

@@ -22,6 +22,9 @@ var charge_target_pos: Vector3 = Vector3.ZERO
 var is_charging: bool = false
 
 func _ready() -> void:
+	model_type = "tank"
+	model_scale = 1.2
+	super()
 	# Override base stats for tank type
 	max_hp = 120.0
 	attack_power = 10.0

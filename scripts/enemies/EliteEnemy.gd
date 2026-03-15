@@ -33,6 +33,9 @@ var swarm_scene: PackedScene = null
 signal elite_defeated()
 
 func _ready() -> void:
+	model_type = "elite"
+	model_scale = 1.3
+	super()  # Call Enemy._ready() for add_to_group("enemies") etc.
 	# Elite stats — 幽冥蛛后
 	max_hp = 200.0
 	attack_power = 22.0
@@ -399,8 +402,8 @@ func _drop_elite_loot() -> void:
 	# 50% chance equipment drop
 	if randf() < 0.5:
 		if GameManager.has_method("grant_random_equipment"):
-			var _equip := GameManager.grant_random_equipment()
-		PlayerData.add_to_inventory(_equip)
+			var equip := GameManager.grant_random_equipment()
+			PlayerData.add_to_inventory(equip)
 			print("[EliteEnemy] Dropped random equipment")
 		else:
 			var bonus := randi_range(10, 20)

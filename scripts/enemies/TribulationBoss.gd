@@ -51,6 +51,9 @@ signal boss_defeated()
 signal phase_changed(phase: int)
 
 func _ready() -> void:
+	model_type = "tribulation"
+	model_scale = 2.0
+	super()
 	max_hp = 700.0
 	attack_power = 45.0
 	defense = 20.0
@@ -139,8 +142,8 @@ func _process_stagger(delta: float) -> void:
 
 	# Flash effect
 	if mesh:
-		var flash_val := abs(sin(Time.get_ticks_msec() * 0.015))
-		var mat := mesh.get_surface_override_material(0)
+		var flash_val: float = abs(sin(Time.get_ticks_msec() * 0.015))
+		var mat: Material = mesh.get_surface_override_material(0)
 		if mat is StandardMaterial3D:
 			mat.emission_energy_multiplier = 0.5 + flash_val * 3.0
 

@@ -8,6 +8,7 @@ signal boon_chosen(boon_id: String)
 
 var boon_options: Array[Dictionary] = []
 var _spirit_root_color: Color = Color(0.7, 0.7, 0.9)  # Default fallback
+var _fade_root: Control  # Wrapper for fade animations (CanvasLayer has no modulate)
 
 # Spirit root color mapping (matches HUD.gd)
 const SPIRIT_ROOT_COLORS: Dictionary = {
@@ -26,12 +27,17 @@ func _ready() -> void:
 	_build_ui()
 
 func _build_ui() -> void:
+	# Fade wrapper (CanvasLayer has no modulate, so use a Control)
+	_fade_root = Control.new()
+	_fade_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(_fade_root)
+
 	# Full-screen darkened background
 	var bg := ColorRect.new()
 	bg.color = Color(0, 0, 0, 0.6)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_STOP
-	add_child(bg)
+	_fade_root.add_child(bg)
 
 	# Root container
 	var root := VBoxContainer.new()
@@ -41,7 +47,7 @@ func _build_ui() -> void:
 	root.anchor_top = 0.15
 	root.anchor_bottom = 0.85
 	root.alignment = BoxContainer.ALIGNMENT_CENTER
-	add_child(root)
+	_fade_root.add_child(root)
 
 	# Title
 	var title := Label.new()
@@ -74,9 +80,9 @@ func _build_ui() -> void:
 		card_row.add_child(card)
 
 	# Fade-in animation
-	self.modulate = Color(1, 1, 1, 0)
+	_fade_root.modulate = Color(1, 1, 1, 0)
 	var tween := create_tween()
-	tween.tween_property(self, "modulate:a", 1.0, 0.4)
+	tween.tween_property(_fade_root, "modulate:a", 1.0, 0.4)
 
 func _create_boon_card(boon: Dictionary, index: int) -> PanelContainer:
 	"""Create a clickable boon card."""
@@ -194,7 +200,7 @@ func _on_boon_selected(boon_id: String) -> void:
 
 	# Fade out and remove
 	var tween := create_tween()
-	tween.tween_property(self, "modulate:a", 0.0, 0.3)
+	tween.tween_property(_fade_root, "modulate:a", 0.0, 0.3)
 	tween.tween_callback(_close.bind(boon_id))
 
 func _close(boon_id: String) -> void:

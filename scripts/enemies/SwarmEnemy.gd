@@ -14,6 +14,9 @@ var erratic_offset: Vector3 = Vector3.ZERO
 var offset_timer: float = 0.0
 
 func _ready() -> void:
+	model_type = "swarm"
+	model_scale = 0.5
+	super()
 	# Override base stats for swarm type
 	max_hp = 20.0
 	attack_power = 4.0

@@ -13,7 +13,7 @@ height = 3.2
 [sub_resource type="StandardMaterial3D" id="Material_trib"]
 albedo_color = Color(0.35, 0.15, 0.55, 1)
 emission_enabled = true
-emission = Color(0.8, 0.7, 0.2)
+emission = Color(0.8, 0.7, 0.2, 1)
 emission_energy_multiplier = 0.6
 metallic = 0.6
 roughness = 0.3
