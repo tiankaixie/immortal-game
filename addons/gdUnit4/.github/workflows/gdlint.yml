@@ -1,0 +1,55 @@
+name: gdlint
+
+run-name: ${{ github.head_ref || github.ref_name }}-gdlint
+
+on: # yamllint disable-line rule:truthy
+  workflow_call:
+    inputs:
+      os:
+        required: false
+        type: string
+        default: "ubuntu-22.04"
+  workflow_dispatch:
+    inputs:
+      os:
+        description: 'Defines the type of machine to run the job on.'
+        required: false
+        type: string
+        default: "ubuntu-22.04"
+
+jobs:
+  gdlint:
+    name: GdUnit
+    runs-on: ${{ inputs.os }}
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout GdUnit Repository
+        uses: actions/checkout@v5
+        with:
+          lfs: true
+
+      - name: Setup GDLint
+        uses: Scony/godot-gdscript-toolkit@master
+        with:
+          version: 4.5.0
+
+      - name: Run GDLint
+        id: run-gdlint
+        shell: bash
+        run: |
+          mkdir -p reports/gdlint/
+          gdlint addons/gdUnit4/bin/ | tee reports/gdlint/gdlint.txt
+          gdlint addons/gdUnit4/src/cmd/ | tee reports/gdlint/cmd.txt
+          gdlint addons/gdUnit4/src/reporters/ | tee reports/gdlint/report.txt
+          gdlint addons/gdUnit4/src/network | tee reports/gdlint/gdlint_networkcode.txt
+          gdlint addons/gdUnit4/src/asserts | tee reports/gdlint/gdlint_asserts.txt
+
+      - name: Upload GDLint Report
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: gdlint.txt
+          path: reports/gdlint/**
+          if-no-files-found: error
+          compression-level: 0 # no compression

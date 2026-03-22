@@ -670,6 +670,19 @@ func _update_hp_label() -> void:
 # ─── Helpers ───────────────────────────────────────────────────
 func _change_boss_state(new_state: BossState) -> void:
 	boss_state = new_state
+	if character_model == null:
+		return
+	match new_state:
+		BossState.IDLE:
+			character_model.play("Idle")
+		BossState.CHASE:
+			character_model.play("Run")
+		BossState.MELEE:
+			character_model.play("Punch")
+		BossState.LIGHTNING_STRIKE, BossState.THUNDER_CHAIN, BossState.TRIBULATION_STORM, BossState.STAGGER:
+			character_model.play("Weapon")
+		BossState.DEAD:
+			character_model.play("Death")
 
 # Override base _physics_process to prevent double processing
 func _process_idle() -> void:

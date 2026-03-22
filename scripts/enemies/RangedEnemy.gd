@@ -201,6 +201,9 @@ func _perform_ranged_attack() -> void:
 	if player_ref == null or not player_ref.has_method("take_damage"):
 		return
 
+	if character_model != null:
+		character_model.play("Weapon", 0.08)
+
 	var damage_info := CombatSystem.calculate_damage(attack_power, PlayerData.get_total_defense(), 1.0)
 	player_ref.take_damage(damage_info["amount"])
 	CombatSystem.damage_dealt.emit(player_ref, damage_info["amount"], damage_info["is_critical"])
@@ -248,6 +251,17 @@ func _die() -> void:
 # ─── Helpers ───────────────────────────────────────────────────
 func _change_ranged_state(new_state: RangedState) -> void:
 	ranged_state = new_state
+	if character_model == null:
+		return
+	match new_state:
+		RangedState.IDLE:
+			character_model.play("Idle")
+		RangedState.REPOSITION, RangedState.RETREAT:
+			character_model.play("Run")
+		RangedState.ATTACK:
+			character_model.play("Weapon")
+		RangedState.DEAD:
+			character_model.play("Death")
 
 # Override base _physics_process to prevent double processing
 func _process_idle() -> void:

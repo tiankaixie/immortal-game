@@ -55,6 +55,7 @@ var camera_pitch: float = -0.5
 @onready var collision: CollisionShape3D = $CollisionShape3D
 var character_model: Node3D = null
 var anim_player: AnimationPlayer = null
+var model_yaw_offset: float = PI
 
 # ─── Signals ───────────────────────────────────────────────────
 signal hp_changed(current: float, maximum: float)
@@ -87,8 +88,9 @@ func _setup_character_model() -> void:
 	character_model = CharacterModelScript.new()
 	character_model.name = "CharacterModel"
 	add_child(character_model)
-	character_model.load_model("player", 0.65)
-	character_model.rotation.y = PI  # Face away from camera (forward)
+	character_model.load_model("player", 1.3)
+	model_yaw_offset = character_model.facing_yaw_offset if "facing_yaw_offset" in character_model else PI
+	character_model.rotation.y = model_yaw_offset
 	if character_model.mesh_instance:
 		mesh.visible = false
 		anim_player = character_model.anim_player
@@ -151,6 +153,8 @@ func _physics_process(delta: float) -> void:
 	else:
 		_process_movement(delta)
 
+	_update_combat_facing(delta)
+
 	move_and_slide()
 	_update_animation_state()
 
@@ -189,7 +193,7 @@ func _process_movement(delta: float) -> void:
 		# because SpringArm3D is a child and would shift the camera basis)
 		var target_rot := atan2(move_dir.x, move_dir.z)
 		if character_model:
-			character_model.rotation.y = lerp_angle(character_model.rotation.y, target_rot, ROTATION_SPEED * delta)
+			character_model.rotation.y = lerp_angle(character_model.rotation.y, target_rot + model_yaw_offset, ROTATION_SPEED * delta)
 		else:
 			mesh.rotation.y = lerp_angle(mesh.rotation.y, target_rot, ROTATION_SPEED * delta)
 	else:
@@ -203,12 +207,29 @@ func _process_movement(delta: float) -> void:
 		cam_forward = cam_forward.normalized()
 		_start_dash(move_dir if move_dir.length() > 0.1 else cam_forward)
 
+func _update_combat_facing(delta: float) -> void:
+	"""Keep the model oriented toward the current combat target when auto-battling or attacking."""
+	if not PlayerData.in_combat or is_dashing:
+		return
+
+	var target: Node = CombatSystem.current_target
+	if target == null or not is_instance_valid(target):
+		return
+
+	var should_track_target := CombatSystem.current_state == CombatSystem.CombatState.AUTO_BATTLE
+	should_track_target = should_track_target or _combat_anim_lock > 0.0
+	should_track_target = should_track_target or Vector2(velocity.x, velocity.z).length() < 0.15
+
+	if should_track_target:
+		face_toward_position(target.global_position, delta, false)
+
 # ─── Dash ──────────────────────────────────────────────────────
 func _start_dash(direction: Vector3) -> void:
 	is_dashing = true
 	dash_timer = DASH_DURATION
 	dash_cooldown_timer = DASH_COOLDOWN
 	dash_direction = direction.normalized()
+	face_toward_position(global_position + dash_direction, 0.0, true)
 
 func _process_dash(_delta: float) -> void:
 	velocity.x = dash_direction.x * DASH_SPEED
@@ -344,6 +365,26 @@ func _find_nearest_enemy() -> Node:
 				nearest = enemy
 	return nearest
 
+func face_toward_position(target_position: Vector3, delta: float = 0.0, instant: bool = false) -> void:
+	"""Rotate the visible player model toward a world-space target on the horizontal plane."""
+	var direction := target_position - global_position
+	direction.y = 0.0
+	if direction.length_squared() <= 0.0001:
+		return
+
+	var target_rot := atan2(direction.x, direction.z)
+	var visual_node: Node3D = character_model if character_model != null else mesh
+	if visual_node == null:
+		return
+
+	if visual_node == character_model:
+		target_rot += model_yaw_offset
+
+	if instant or delta <= 0.0:
+		visual_node.rotation.y = target_rot
+	else:
+		visual_node.rotation.y = lerp_angle(visual_node.rotation.y, target_rot, ROTATION_SPEED * delta)
+
 # ─── Fall Detection ───────────────────────────────────────────
 func _on_fall_off_platform() -> void:
 	"""Player fell off the platform — take damage and teleport back."""
@@ -376,6 +417,7 @@ func _on_death() -> void:
 	# Stop combat and player processing
 	CombatSystem.end_combat(false)
 	set_physics_process(false)
+	GameManager.end_run(false)
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
 	# Death screen overlay

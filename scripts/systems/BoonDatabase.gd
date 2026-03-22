@@ -180,6 +180,46 @@ func apply_boon(boon_id: String) -> void:
 
 	print("[BoonDatabase] Applied boon: %s" % boon_id)
 
+func _to_string_array(value: Variant) -> Array[String]:
+	var result: Array[String] = []
+	if value is Array:
+		for entry in value:
+			if entry is String:
+				result.append(entry)
+	return result
+
+func to_dict() -> Dictionary:
+	return {
+		"acquired_boons": acquired_boons,
+		"atk_multiplier": atk_multiplier,
+		"def_multiplier": def_multiplier,
+		"speed_multiplier": speed_multiplier,
+		"hp_regen_per_sec": hp_regen_per_sec,
+		"sp_max_bonus": sp_max_bonus,
+		"dash_cooldown_reduction": dash_cooldown_reduction,
+		"double_strike_chance": double_strike_chance,
+		"iron_body_chance": iron_body_chance,
+		"skill_damage_multiplier": skill_damage_multiplier,
+		"loot_tier_bonus": loot_tier_bonus,
+		"skill_slot_bonus": skill_slot_bonus,
+		"burn_damage_multiplier": burn_damage_multiplier,
+	}
+
+func from_dict(data: Dictionary) -> void:
+	acquired_boons = _to_string_array(data.get("acquired_boons", []))
+	atk_multiplier = data.get("atk_multiplier", 1.0)
+	def_multiplier = data.get("def_multiplier", 1.0)
+	speed_multiplier = data.get("speed_multiplier", 1.0)
+	hp_regen_per_sec = data.get("hp_regen_per_sec", 0.0)
+	sp_max_bonus = data.get("sp_max_bonus", 0.0)
+	dash_cooldown_reduction = data.get("dash_cooldown_reduction", 0.0)
+	double_strike_chance = data.get("double_strike_chance", 0.0)
+	iron_body_chance = data.get("iron_body_chance", 0.0)
+	skill_damage_multiplier = data.get("skill_damage_multiplier", 1.0)
+	loot_tier_bonus = data.get("loot_tier_bonus", 0)
+	skill_slot_bonus = data.get("skill_slot_bonus", 0)
+	burn_damage_multiplier = data.get("burn_damage_multiplier", 1.0)
+
 # ─── Random Selection ─────────────────────────────────────────
 func get_random_boons(count: int = 3) -> Array[Dictionary]:
 	"""Return `count` random boons, avoiding duplicates already acquired (where stackable doesn't apply)."""

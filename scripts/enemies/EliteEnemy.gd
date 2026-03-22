@@ -190,6 +190,9 @@ func _cast_poison_web() -> void:
 	if player_ref == null:
 		return
 
+	if character_model != null:
+		character_model.play("Weapon", 0.08)
+
 	var dist := global_position.distance_to(player_ref.global_position)
 
 	# Spawn visual effect at player position
@@ -283,6 +286,9 @@ func _summon_spiderlings() -> void:
 	if swarm_scene == null:
 		print("[EliteEnemy] Cannot summon — SwarmEnemy scene not loaded")
 		return
+
+	if character_model != null:
+		character_model.play("Weapon", 0.08)
 
 	var spawned: int = 0
 	for i in range(summon_count):
@@ -425,6 +431,19 @@ func _update_hp_label() -> void:
 # ─── Helpers ───────────────────────────────────────────────────
 func _change_elite_state(new_state: EliteState) -> void:
 	elite_state = new_state
+	if character_model == null:
+		return
+	match new_state:
+		EliteState.IDLE:
+			character_model.play("Idle")
+		EliteState.CHASE:
+			character_model.play("Run")
+		EliteState.MELEE:
+			character_model.play("Punch")
+		EliteState.POISON_WEB, EliteState.SUMMON:
+			character_model.play("Weapon")
+		EliteState.DEAD:
+			character_model.play("Death")
 
 # Override base _physics_process to prevent double processing
 func _process_idle() -> void:

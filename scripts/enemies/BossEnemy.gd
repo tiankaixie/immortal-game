@@ -253,6 +253,9 @@ func _perform_aoe_stomp() -> void:
 	if player_ref == null or not player_ref.has_method("take_damage"):
 		return
 
+	if character_model != null:
+		character_model.play("Weapon", 0.06)
+
 	var dist := global_position.distance_to(player_ref.global_position)
 	if dist > aoe_stomp_radius:
 		print("[BossEnemy] AoE stomp — player out of range (%.1fm)" % dist)
@@ -346,6 +349,9 @@ func _perform_dragon_breath() -> void:
 	"""Ranged dragon breath attack — Phase 2 only."""
 	if player_ref == null or not player_ref.has_method("take_damage"):
 		return
+
+	if character_model != null:
+		character_model.play("Weapon", 0.05)
 
 	var dist := global_position.distance_to(player_ref.global_position)
 	if dist > breath_range:
@@ -501,6 +507,19 @@ func _update_hp_label() -> void:
 # ─── Helpers ───────────────────────────────────────────────────
 func _change_boss_state(new_state: BossState) -> void:
 	boss_state = new_state
+	if character_model == null:
+		return
+	match new_state:
+		BossState.IDLE:
+			character_model.play("Idle")
+		BossState.CHASE:
+			character_model.play("Run")
+		BossState.MELEE:
+			character_model.play("Punch")
+		BossState.AOE_STOMP, BossState.BREATH, BossState.STAGGER:
+			character_model.play("Weapon")
+		BossState.DEAD:
+			character_model.play("Death")
 
 # Override base _physics_process to prevent double processing
 func _process_idle() -> void:

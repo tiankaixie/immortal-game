@@ -4,10 +4,11 @@ extends Node
 ## Saves top 5 runs to user://run_history.json, sorted by rooms_cleared desc,
 ## then kills desc. Provides methods to query best runs and best single-stat records.
 
-const SAVE_PATH: String = "user://run_history.json"
+const DEFAULT_SAVE_PATH: String = "user://run_history.json"
 const MAX_RECORDS: int = 5
 
 var _history: Array = []
+var _save_path: String = DEFAULT_SAVE_PATH
 
 func _ready() -> void:
 	_load_history()
@@ -42,6 +43,15 @@ func get_best_runs() -> Array:
 	"""Return all saved runs sorted by rooms_cleared desc, then kills desc."""
 	return _history.duplicate()
 
+func get_save_path() -> String:
+	return _save_path
+
+func set_save_path(path: String) -> void:
+	_save_path = path
+
+func reset_save_path() -> void:
+	_save_path = DEFAULT_SAVE_PATH
+
 func get_best_record(stat: String) -> Dictionary:
 	"""Return the run with the highest value for a given stat key."""
 	if _history.is_empty():
@@ -71,21 +81,49 @@ func _sort_history() -> void:
 		return a.get("kills", 0) > b.get("kills", 0)
 	)
 
+func _globalize_path(path: String) -> String:
+	if path.begins_with("user://") or path.begins_with("res://"):
+		return ProjectSettings.globalize_path(path)
+	return path
+
+func _ensure_save_directory_exists(path: String) -> bool:
+	var base_dir := path.get_base_dir()
+	if base_dir.is_empty():
+		return true
+
+	var global_base_dir := _globalize_path(base_dir)
+	if DirAccess.dir_exists_absolute(global_base_dir):
+		return true
+
+	var err := DirAccess.make_dir_recursive_absolute(global_base_dir)
+	if err != OK:
+		push_error("[RunHistory] Failed to create save directory %s: %s" % [
+			global_base_dir,
+			error_string(err),
+		])
+		return false
+
+	return true
+
 func _save_history() -> void:
 	"""Write history to disk as JSON."""
-	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	var save_path := get_save_path()
+	if not _ensure_save_directory_exists(save_path):
+		return
+	var file := FileAccess.open(save_path, FileAccess.WRITE)
 	if file:
 		file.store_string(JSON.stringify(_history, "\t"))
 		file.close()
 	else:
-		push_warning("[RunHistory] Failed to save: %s" % SAVE_PATH)
+		push_warning("[RunHistory] Failed to save: %s" % save_path)
 
 func _load_history() -> void:
 	"""Load history from disk."""
-	if not FileAccess.file_exists(SAVE_PATH):
+	var save_path := get_save_path()
+	if not FileAccess.file_exists(save_path):
 		_history = []
 		return
-	var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
+	var file := FileAccess.open(save_path, FileAccess.READ)
 	if not file:
 		_history = []
 		return

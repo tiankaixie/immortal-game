@@ -15,6 +15,8 @@ const SkillVFXScene = preload("res://scenes/vfx/SkillVFX.tscn")
 var _last_skill_element: String = ""
 
 func _ready() -> void:
+	var continuing_run := GameManager.is_run_active
+
 	# Load saved settings (audio, display, gameplay)
 	var SettingsPanel := load("res://scripts/ui/SettingsPanel.gd")
 	if SettingsPanel and SettingsPanel.has_method("load_settings_on_startup"):
@@ -23,11 +25,19 @@ func _ready() -> void:
 	# Set game state
 	GameManager.change_state(GameManager.GameState.DUNGEON_RUN)
 
-	# Reset run stats for fresh run
-	RunStats.reset()
-
-	# Reset boon state for fresh run
-	BoonDatabase.reset_run()
+	if continuing_run:
+		print("[Main] Resuming active run at room %d" % GameManager.current_room)
+	else:
+		if GameManager.current_dungeon_id.is_empty():
+			GameManager.current_dungeon_id = "main_run"
+		if GameManager.current_floor <= 0:
+			GameManager.current_floor = 1
+		if GameManager.current_room <= 0:
+			GameManager.current_room = 1
+		GameManager.is_run_active = true
+		GameManager.run_layout.clear()
+		RunStats.reset()
+		BoonDatabase.reset_run()
 
 	# Add DungeonController
 	_setup_dungeon_controller()

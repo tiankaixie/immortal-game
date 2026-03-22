@@ -42,6 +42,10 @@ func _initialize_room() -> void:
 	print("[RoomManager] Tracking %d enemies" % total_enemies)
 	enemy_count_changed.emit(enemies_alive, total_enemies)
 
+	# Non-combat rooms such as treasure/shop layouts must still advance the run.
+	if total_enemies <= 0 and not is_cleared:
+		call_deferred("_on_room_cleared")
+
 func _on_enemy_defeated(_enemy: Node) -> void:
 	"""Called when an enemy emits its defeated signal."""
 	enemies_alive = max(0, enemies_alive - 1)

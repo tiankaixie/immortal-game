@@ -1,0 +1,110 @@
+name: ci-pr
+
+run-name: ${{ github.head_ref || github.ref_name }}-ci-pr
+
+on: # yamllint disable-line rule:truthy
+  pull_request:
+    paths-ignore:
+      - '**.jpg'
+      - '**.png'
+  workflow_dispatch:
+
+concurrency:
+  group: ci-pr-${{ github.event.number }}
+  cancel-in-progress: true
+
+
+jobs:
+  format-checks:
+    if: ${{ !cancelled() }}
+    name: '📝 Linting & Formatting'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/formatting_checks
+
+  gdlint:
+    if: ${{ !cancelled() }}
+    name: '📝 GDLint'
+    uses: ./.github/workflows/gdlint.yml
+
+
+  unit-tests:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix:
+        # If changes are made here, they must be transferred to `.github\workflows\ci-pr-publish-report.yml`
+        godot-version: ['4.5']
+        godot-status: ['stable']
+        godot-net: ['.Net', '']
+        #include:
+        #  - godot-version: '4.6'
+        #    godot-status: 'dev1'
+
+    permissions:
+      actions: write
+      checks: write
+      contents: write
+      pull-requests: write
+      statuses: write
+
+    name: GdUnit4 | Godot_${{ matrix.godot-version }}-${{ matrix.godot-status }}${{ matrix.godot-net }}
+
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v5
+        with:
+          lfs: true
+
+      - shell: bash
+        run: |
+          # enable selftest on gdUnit4-action
+          echo "GDUNIT_SELFTEST=true" >> "$GITHUB_ENV"
+
+      - name: 'Test GdUnit4 dev - Godot_${{ matrix.godot-version }}-${{ matrix.godot-status }}'
+        if: ${{ matrix.godot-net == '' }}
+        uses: MikeSchulze/gdUnit4-action@v1
+        with:
+          godot-version: ${{ matrix.godot-version }}
+          godot-status: ${{ matrix.godot-status }}
+          version: installed
+          paths: |
+            res://addons/gdUnit4/test/
+          arguments: |
+            --verbose
+          timeout: 10
+          warnings-as-errors: true
+          publish-report: false
+          report-name: gdUnit4_Godot${{ matrix.godot-version }}-${{ matrix.godot-status }}
+
+      - name: 'Test GdUnit4 dev - Godot_${{ matrix.godot-version }}-${{ matrix.godot-status }}-net'
+        if: ${{ matrix.godot-net == '.Net' }}
+        uses: MikeSchulze/gdUnit4-action@v1
+        with:
+          godot-version: ${{ matrix.godot-version }}
+          godot-status: ${{ matrix.godot-status }}
+          godot-net: true
+          dotnet-version: 'net9.0'
+          version: installed
+          paths: |
+            res://addons/gdUnit4/test/dotnet
+          timeout: 5
+          warnings-as-errors: true
+          retries: 3 # We have set the number of repetitions to 3 because Godot mono randomly crashes during C# tests
+          publish-report: false
+          report-name: gdUnit4_Godot${{ matrix.godot-version }}-${{ matrix.godot-status }}-net
+
+  finalize:
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    name: 'Final Results'
+    needs: [format-checks, gdlint, unit-tests]
+    steps:
+      - run: exit 1
+        if: >-
+          ${{
+               contains(needs.*.result, 'failure')
+            || contains(needs.*.result, 'cancelled')
+          }}

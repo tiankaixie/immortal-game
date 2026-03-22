@@ -1,0 +1,45 @@
+[gd_scene load_steps=5 format=3 uid="uid://ci0fexg0xk68m"]
+
+[ext_resource type="Script" path="res://scripts/ui/AnimationPreview.gd" id="1_j2hax"]
+
+[sub_resource type="Environment" id="Environment_11na2"]
+background_mode = 2
+background_color = Color(0.117647, 0.12549, 0.145098, 1)
+ambient_light_source = 3
+ambient_light_color = Color(1, 1, 1, 1)
+ambient_light_energy = 0.65
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_8co55"]
+size = Vector2(14, 14)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_2l5mu"]
+albedo_color = Color(0.168627, 0.172549, 0.188235, 1)
+roughness = 0.85
+
+[node name="AnimationPreview" type="Node3D"]
+script = ExtResource("1_j2hax")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_11na2")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.842985, -0.313426, 0.437155, 0, 0.812695, 0.582691, -0.537942, -0.491109, 0.685049, 0, 5, 0)
+light_energy = 2.1
+shadow_enabled = true
+
+[node name="SecondaryLight" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.76298, 0.398749, -0.507668, 0, 0.78693, 0.617044, 0.646424, -0.470715, 0.600451, 0, 4, 0)
+light_energy = 0.85
+light_color = Color(0.768627, 0.835294, 1, 1)
+shadow_enabled = false
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.913545, 0.406737, 0, -0.406737, 0.913545, 0, 2.2, 7.5)
+current = true
+fov = 55.0
+
+[node name="ModelAnchor" type="Node3D" parent="."]
+
+[node name="Floor" type="MeshInstance3D" parent="."]
+mesh = SubResource("PlaneMesh_8co55")
+surface_material_override/0 = SubResource("StandardMaterial3D_2l5mu")

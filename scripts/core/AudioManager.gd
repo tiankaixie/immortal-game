@@ -115,6 +115,18 @@ func play_sfx(sfx_name: String) -> void:
 	player.stream = stream
 	player.play()
 
+func has_sfx(sfx_name: String) -> bool:
+	"""Check if an SFX resource exists without logging warnings."""
+	if _sfx_cache.has(sfx_name):
+		return true
+
+	var filename: String = SFX_FILES.get(sfx_name, sfx_name)
+	var path: String = SFX_PATH + filename
+	if ResourceLoader.exists(path):
+		return true
+
+	return ResourceLoader.exists(SFX_PATH + filename.get_basename() + ".wav")
+
 func _load_sfx(sfx_name: String) -> AudioStream:
 	"""Load and cache an SFX audio stream."""
 	if _sfx_cache.has(sfx_name):

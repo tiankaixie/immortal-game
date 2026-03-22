@@ -1,0 +1,76 @@
+name: ci-dev
+
+on: # yamllint disable-line rule:truthy
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - '**.yml'
+      - '**.jpg'
+      - '**.png'
+      - '**.md'
+  workflow_dispatch:
+
+concurrency:
+  group: ci-dev-${{ github.event.number }}
+  cancel-in-progress: true
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix:
+        godot-version: ['4.5']
+        godot-status: ['stable']
+        godot-net: ['.Net', '']
+
+    permissions:
+      actions: write
+      checks: write
+      contents: write
+      pull-requests: write
+      statuses: write
+
+    name: GdUnit4 | Godot_${{ matrix.godot-version }}-${{ matrix.godot-status }}${{ matrix.godot-net }}
+
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v5
+        with:
+          lfs: true
+
+      - shell: bash
+        run: |
+          # enable selftest on gdUnit4-action
+          echo "GDUNIT_SELFTEST=true" >> "$GITHUB_ENV"
+
+      - name: 'Test GdUnit4 (master) - Godot_${{ matrix.godot-version }}-${{ matrix.godot-status }}'
+        if: ${{ matrix.godot-net == '' }}
+        uses: MikeSchulze/gdUnit4-action@v1
+        with:
+          godot-version: ${{ matrix.godot-version }}
+          godot-status: ${{ matrix.godot-status }}
+          version: master
+          paths: |
+            res://addons/gdUnit4/test/
+          timeout: 10
+          warnings-as-errors: true
+          report-name: report_gdUnit4_Godot${{ matrix.godot-version }}-${{ matrix.godot-status }}
+
+      - name: 'Test GdUnit4 (master) - Godot_${{ matrix.godot-version }}-${{ matrix.godot-status }}-net'
+        if: ${{ matrix.godot-net == '.Net' }}
+        uses: MikeSchulze/gdUnit4-action@v1
+        with:
+          godot-version: ${{ matrix.godot-version }}
+          godot-status: ${{ matrix.godot-status }}
+          godot-net: true
+          dotnet-version: 'net9.0'
+          version: master
+          paths: |
+            res://addons/gdUnit4/test/dotnet
+          timeout: 5
+          warnings-as-errors: true
+          retries: 3 # We have set the number of repetitions to 3 because Godot mono randomly crashes during C# tests
+          report-name: report_gdUnit4_Godot${{ matrix.godot-version }}-${{ matrix.godot-status }}-net

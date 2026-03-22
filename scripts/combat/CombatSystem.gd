@@ -179,6 +179,7 @@ func _perform_basic_attack(target: Node) -> void:
 	if distance <= BASIC_ATTACK_RANGE:
 		# In range — attack if cooldown is ready
 		if basic_attack_timer <= 0.0:
+			_face_player_toward(target, true)
 			var damage_info := calculate_damage(
 				PlayerData.get_total_attack(),
 				target.defense if "defense" in target else 0.0,
@@ -213,6 +214,7 @@ func _move_toward(target: Node) -> void:
 		return
 	
 	var direction: Vector3 = (target.global_position - player_entity.global_position).normalized()
+	_face_player_toward(target, false)
 	
 	# Use the player's move speed if available, otherwise default
 	var move_speed: float = PlayerData.base_speed * 5.0  # Convert to world units/sec
@@ -285,6 +287,8 @@ func execute_skill(skill_id: String, target: Node) -> void:
 	
 	# Spend SP
 	PlayerData.spend_sp(sp_cost)
+	if target != null and is_instance_valid(target):
+		_face_player_toward(target, true)
 
 	# Play skill casting animation on player
 	if player_entity != null and player_entity.has_method("play_combat_anim"):
@@ -339,6 +343,7 @@ func execute_skill(skill_id: String, target: Node) -> void:
 				# Teleport player 1.5m behind the target
 				var behind_offset: Vector3 = (target.global_position - player_entity.global_position).normalized() * 1.5
 				player_entity.global_position = target.global_position - behind_offset + Vector3(0, 0.1, 0)
+				_face_player_toward(target, true)
 				# VFX: purple particle burst at ORIGIN (departure)
 				_spawn_element_vfx(origin_pos, "void")
 				# VFX: purple particle burst at DESTINATION (arrival)
@@ -744,6 +749,12 @@ func _find_nearest_enemy() -> Node:
 				nearest = enemy
 	
 	return nearest
+
+func _face_player_toward(target: Node, instant: bool) -> void:
+	if player_entity == null or target == null or not is_instance_valid(target):
+		return
+	if player_entity.has_method("face_toward_position"):
+		player_entity.face_toward_position(target.global_position, 0.0, instant)
 
 func _get_enemy_tier(enemy: Node) -> int:
 	"""Estimate enemy tier based on stats. Higher stats = higher tier."""

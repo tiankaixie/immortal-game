@@ -154,6 +154,8 @@ func _start_charge() -> void:
 
 	charge_target_pos = player_ref.global_position
 	is_charging = true
+	if character_model != null:
+		character_model.play("Weapon", 0.08)
 	_change_tank_state(TankState.CHARGING)
 	print("[TankEnemy:%s] CHARGING!" % enemy_name)
 
@@ -195,6 +197,9 @@ func _perform_charge_hit() -> void:
 	"""Deal charge damage (1.5x multiplier) to the player."""
 	if player_ref == null or not player_ref.has_method("take_damage"):
 		return
+
+	if character_model != null:
+		character_model.play("Weapon", 0.05)
 
 	var damage_info := CombatSystem.calculate_damage(
 		attack_power, PlayerData.get_total_defense(), charge_damage_multiplier
@@ -244,6 +249,17 @@ func _die() -> void:
 # ─── Helpers ───────────────────────────────────────────────────
 func _change_tank_state(new_state: TankState) -> void:
 	tank_state = new_state
+	if character_model == null:
+		return
+	match new_state:
+		TankState.IDLE:
+			character_model.play("Idle")
+		TankState.CHASE, TankState.CHARGING:
+			character_model.play("Run")
+		TankState.ATTACK:
+			character_model.play("Punch")
+		TankState.DEAD:
+			character_model.play("Death")
 
 # Override base _physics_process to prevent double processing
 func _process_idle() -> void:

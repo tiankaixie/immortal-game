@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#120f24"/>
+      <stop offset="55%" stop-color="#2a1f49"/>
+      <stop offset="100%" stop-color="#4b1f1f"/>
+    </linearGradient>
+    <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f7e7a3"/>
+      <stop offset="100%" stop-color="#c88c3a"/>
+    </linearGradient>
+    <linearGradient id="blade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f7f8ff"/>
+      <stop offset="100%" stop-color="#c8d0f0"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="45%" r="55%">
+      <stop offset="0%" stop-color="#ffe7a0" stop-opacity="0.95"/>
+      <stop offset="70%" stop-color="#ffd36a" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#ffd36a" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="256" height="256" rx="56" fill="url(#bg)"/>
+  <circle cx="128" cy="104" r="58" fill="url(#glow)"/>
+  <circle cx="128" cy="128" r="92" fill="none" stroke="url(#ring)" stroke-width="10"/>
+  <circle cx="128" cy="128" r="78" fill="none" stroke="#f5d88a" stroke-opacity="0.35" stroke-width="2"/>
+
+  <path d="M55 184c18-24 33-38 46-46 10 10 18 23 27 46H55Z" fill="#1a172b"/>
+  <path d="M101 184c18-38 34-63 50-82 16 20 31 44 50 82H101Z" fill="#211d35"/>
+  <path d="M80 184c11-16 21-26 31-34 7 8 12 18 19 34H80Z" fill="#3d5f58" fill-opacity="0.65"/>
+  <path d="M128 70 143 91 134 161 122 161 113 91Z" fill="url(#blade)"/>
+  <path d="M117 88h22l-11-16Z" fill="#fff4cf"/>
+  <path d="M110 160h36v10h-36Z" fill="#d29a42"/>
+  <path d="M99 170h58l-13 12h-32Z" fill="#7a3c28"/>
+  <circle cx="128" cy="112" r="5" fill="#fff3c9"/>
+
+  <path d="M176 74c9 7 16 16 20 28" fill="none" stroke="#f8dea0" stroke-width="5" stroke-linecap="round" stroke-opacity="0.7"/>
+  <path d="M63 98c6-12 14-22 25-29" fill="none" stroke="#f8dea0" stroke-width="4" stroke-linecap="round" stroke-opacity="0.45"/>
+</svg>

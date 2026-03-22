@@ -10,6 +10,7 @@
 # Export templates and builds
 export/
 build/
+reports/
 *.exe
 *.x86_64
 *.pck

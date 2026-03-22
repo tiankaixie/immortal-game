@@ -8,37 +8,41 @@ extends CanvasLayer
 # ─── Signals ──────────────────────────────────────────────────
 signal closed()
 
+var _background: ColorRect = null
+var _panel: PanelContainer = null
+
 func _ready() -> void:
 	# 暂停菜单自身不受暂停影响
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	layer = 20
 	_build_ui()
 	get_tree().paused = true
-	AudioManager.play_sfx("ui_open")
+	if AudioManager.has_method("has_sfx") and AudioManager.has_sfx("ui_open"):
+		AudioManager.play_sfx("ui_open")
 	print("[PauseMenu] Opened — game paused")
 
 func _build_ui() -> void:
 	"""构建暂停菜单UI。"""
 	# 半透明暗色背景
-	var bg := ColorRect.new()
-	bg.color = Color(0, 0, 0, 0.7)
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bg.mouse_filter = Control.MOUSE_FILTER_STOP
-	add_child(bg)
+	_background = ColorRect.new()
+	_background.color = Color(0, 0, 0, 0.7)
+	_background.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_background.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(_background)
 
 	# 主面板
-	var panel := PanelContainer.new()
-	panel.set_anchors_preset(Control.PRESET_CENTER)
-	panel.anchor_left = 0.5
-	panel.anchor_right = 0.5
-	panel.anchor_top = 0.5
-	panel.anchor_bottom = 0.5
-	panel.offset_left = -180
-	panel.offset_right = 180
-	panel.offset_top = -160
-	panel.offset_bottom = 160
-	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	panel.grow_vertical = Control.GROW_DIRECTION_BOTH
+	_panel = PanelContainer.new()
+	_panel.set_anchors_preset(Control.PRESET_CENTER)
+	_panel.anchor_left = 0.5
+	_panel.anchor_right = 0.5
+	_panel.anchor_top = 0.5
+	_panel.anchor_bottom = 0.5
+	_panel.offset_left = -180
+	_panel.offset_right = 180
+	_panel.offset_top = -160
+	_panel.offset_bottom = 160
+	_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
 
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color(0.08, 0.06, 0.15, 0.95)
@@ -46,13 +50,13 @@ func _build_ui() -> void:
 	panel_style.set_border_width_all(2)
 	panel_style.set_corner_radius_all(10)
 	panel_style.set_content_margin_all(24)
-	panel.add_theme_stylebox_override("panel", panel_style)
-	add_child(panel)
+	_panel.add_theme_stylebox_override("panel", panel_style)
+	add_child(_panel)
 
 	var vbox := VBoxContainer.new()
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	vbox.add_theme_constant_override("separation", 16)
-	panel.add_child(vbox)
+	_panel.add_child(vbox)
 
 	# 标题
 	var title := Label.new()
@@ -83,10 +87,12 @@ func _build_ui() -> void:
 	vbox.add_child(main_menu_btn)
 
 	# 淡入动画
-	self.modulate = Color(1, 1, 1, 0)
+	_background.modulate = Color(1, 1, 1, 0)
+	_panel.modulate = Color(1, 1, 1, 0)
 	var tween := create_tween()
 	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
-	tween.tween_property(self, "modulate:a", 1.0, 0.25)
+	tween.parallel().tween_property(_background, "modulate:a", 1.0, 0.25)
+	tween.parallel().tween_property(_panel, "modulate:a", 1.0, 0.25)
 
 func _create_button(text: String) -> Button:
 	"""创建统一风格的菜单按钮。"""
@@ -128,7 +134,10 @@ func resume() -> void:
 	get_tree().paused = false
 	var tween := create_tween()
 	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
-	tween.tween_property(self, "modulate:a", 0.0, 0.2)
+	if _background:
+		tween.parallel().tween_property(_background, "modulate:a", 0.0, 0.2)
+	if _panel:
+		tween.parallel().tween_property(_panel, "modulate:a", 0.0, 0.2)
 	tween.tween_callback(func():
 		closed.emit()
 		queue_free()
@@ -155,6 +164,8 @@ func _on_main_menu() -> void:
 	"""回到主菜单。"""
 	get_tree().paused = false
 	closed.emit()
+	if GameManager.is_run_active and GameManager.current_state == GameManager.GameState.DUNGEON_RUN:
+		GameManager.save_game()
 	GameManager.change_state(GameManager.GameState.MAIN_MENU)
 	GameManager.goto_scene("res://scenes/ui/MainMenu.tscn")
 	queue_free()

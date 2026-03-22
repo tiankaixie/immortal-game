@@ -5,7 +5,7 @@ extends Node
 ## Tracks total_kills, total_runs, total_completions, total_spirit_stones.
 ## Provides methods: record_run(), is_unlocked(), get_unlocks(), check_new_unlocks().
 
-const SAVE_PATH: String = "user://unlocks.json"
+const DEFAULT_SAVE_PATH: String = "user://unlocks.json"
 
 # Cumulative stats across all runs
 var cumulative_stats: Dictionary = {
@@ -22,6 +22,7 @@ var unlocked: Array[String] = []
 const MAX_ROOMS: int = 5
 
 var unlock_definitions: Array[Dictionary] = []
+var _save_path: String = DEFAULT_SAVE_PATH
 
 func _ready() -> void:
 	# Define unlocks (can't use const with Callables)
@@ -87,6 +88,15 @@ func get_unlocks() -> Array[String]:
 	"""Return all unlocked item IDs."""
 	return unlocked.duplicate()
 
+func get_save_path() -> String:
+	return _save_path
+
+func set_save_path(path: String) -> void:
+	_save_path = path
+
+func reset_save_path() -> void:
+	_save_path = DEFAULT_SAVE_PATH
+
 func check_new_unlocks() -> Array[Dictionary]:
 	"""Check all unlock conditions and return newly unlocked items."""
 	var newly_unlocked: Array[Dictionary] = []
@@ -117,6 +127,30 @@ func get_definition(unlock_id: String) -> Dictionary:
 			return definition
 	return {}
 
+func _globalize_path(path: String) -> String:
+	if path.begins_with("user://") or path.begins_with("res://"):
+		return ProjectSettings.globalize_path(path)
+	return path
+
+func _ensure_save_directory_exists(path: String) -> bool:
+	var base_dir := path.get_base_dir()
+	if base_dir.is_empty():
+		return true
+
+	var global_base_dir := _globalize_path(base_dir)
+	if DirAccess.dir_exists_absolute(global_base_dir):
+		return true
+
+	var err := DirAccess.make_dir_recursive_absolute(global_base_dir)
+	if err != OK:
+		push_error("[UnlockSystem] Failed to create save directory %s: %s" % [
+			global_base_dir,
+			error_string(err),
+		])
+		return false
+
+	return true
+
 # ─── Persistence ───────────────────────────────────────────────
 
 func _save_data() -> void:
@@ -124,17 +158,21 @@ func _save_data() -> void:
 		"cumulative_stats": cumulative_stats,
 		"unlocked": unlocked,
 	}
-	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	var save_path := get_save_path()
+	if not _ensure_save_directory_exists(save_path):
+		return
+	var file := FileAccess.open(save_path, FileAccess.WRITE)
 	if file:
 		file.store_string(JSON.stringify(data, "\t"))
 		file.close()
 	else:
-		push_warning("[UnlockSystem] Failed to save: %s" % SAVE_PATH)
+		push_warning("[UnlockSystem] Failed to save: %s" % save_path)
 
 func _load_data() -> void:
-	if not FileAccess.file_exists(SAVE_PATH):
+	var save_path := get_save_path()
+	if not FileAccess.file_exists(save_path):
 		return
-	var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
+	var file := FileAccess.open(save_path, FileAccess.READ)
 	if not file:
 		return
 	var json_text := file.get_as_text()

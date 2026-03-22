@@ -120,21 +120,36 @@ signal room_type_changed(room_type: int, room_type_name: String)
 signal dungeon_completed()
 
 func _ready() -> void:
+	if GameManager.is_run_active and GameManager.current_room > 0:
+		current_room_number = GameManager.current_room
+
 	# Preload enemy scenes
 	_preload_enemy_scenes()
 
-	# Select boss type for this run (random from pool)
-	boss_type = BOSS_TYPES[randi() % BOSS_TYPES.size()]
+	if GameManager.is_run_active and not GameManager.run_layout.is_empty():
+		boss_type = GameManager.run_layout.get("boss_type", BOSS_ENEMY_SCENE_PATH)
+		shop_room_number = GameManager.run_layout.get("shop_room_number", -1)
+		treasure_rooms = _to_int_array(GameManager.run_layout.get("treasure_rooms", []))
+		print("[DungeonController] Restored run layout for room %d" % current_room_number)
+	else:
+		# Select boss type for this run (random from pool)
+		boss_type = BOSS_TYPES[randi() % BOSS_TYPES.size()]
 
-	# Decide if this run has a shop room (50% chance)
-	if randf() < 0.5:
-		shop_room_number = SHOP_ROOM_CANDIDATES[randi() % SHOP_ROOM_CANDIDATES.size()]
-		print("[DungeonController] Shop room scheduled at room %d" % shop_room_number)
+		# Decide if this run has a shop room (50% chance)
+		if randf() < 0.5:
+			shop_room_number = SHOP_ROOM_CANDIDATES[randi() % SHOP_ROOM_CANDIDATES.size()]
+			print("[DungeonController] Shop room scheduled at room %d" % shop_room_number)
 
-	# Pre-determine treasure rooms (20% chance for rooms 1, 2, 4; rooms 3 and 5 are fixed types)
-	for r in [1, 2, 4]:
-		if randf() < 0.2:
-			treasure_rooms.append(r)
+		# Pre-determine treasure rooms (20% chance for rooms 1, 2, 4; rooms 3 and 5 are fixed types)
+		for r in [1, 2, 4]:
+			if randf() < 0.2:
+				treasure_rooms.append(r)
+		GameManager.run_layout = {
+			"boss_type": boss_type,
+			"shop_room_number": shop_room_number,
+			"treasure_rooms": treasure_rooms.duplicate(),
+		}
+
 	if treasure_rooms.size() > 0:
 		print("[DungeonController] Treasure rooms: %s" % str(treasure_rooms))
 
@@ -152,6 +167,13 @@ func _preload_enemy_scenes() -> void:
 	enemy_scenes[TRIBULATION_BOSS_SCENE_PATH] = load(TRIBULATION_BOSS_SCENE_PATH)
 	enemy_scenes[ELITE_ENEMY_SCENE_PATH] = load(ELITE_ENEMY_SCENE_PATH)
 	print("[DungeonController] Enemy scenes preloaded")
+
+func _to_int_array(value: Variant) -> Array[int]:
+	var result: Array[int] = []
+	if value is Array:
+		for entry in value:
+			result.append(int(entry))
+	return result
 
 func _connect_room_manager() -> void:
 	"""Find and connect to the RoomManager in the current room."""
@@ -544,9 +566,11 @@ func _show_dungeon_complete() -> void:
 	vbox.add_child(btn)
 
 	# Fade in
-	canvas.modulate = Color(1, 1, 1, 0)
+	bg.modulate = Color(1, 1, 1, 0)
+	vbox.modulate = Color(1, 1, 1, 0)
 	var tween := create_tween()
-	tween.tween_property(canvas, "modulate:a", 1.0, 0.6)
+	tween.parallel().tween_property(bg, "modulate:a", 1.0, 0.6)
+	tween.parallel().tween_property(vbox, "modulate:a", 1.0, 0.6)
 
 func _on_return_to_menu() -> void:
 	"""End the run and go back to main menu."""

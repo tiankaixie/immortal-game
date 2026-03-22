@@ -11,15 +11,16 @@ extends Control
 @onready var quit_btn: Button = $VBoxContainer/QuitButton
 
 var _hard_mode_btn: Button = null
+var _status_label: Label = null
 
 func _ready() -> void:
 	# Show cursor
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	_setup_status_label()
 	
 	# Check for save file
 	if not GameManager.has_save_file():
-		continue_btn.disabled = true
-		continue_btn.modulate = Color(0.5, 0.5, 0.5, 0.7)
+		_set_continue_enabled(false)
 	
 	# Connect signals
 	new_game_btn.pressed.connect(_on_new_game)
@@ -31,6 +32,31 @@ func _ready() -> void:
 		_add_hard_mode_toggle()
 	
 	print("[MainMenu] Ready")
+
+func _setup_status_label() -> void:
+	var vbox := $VBoxContainer
+	_status_label = Label.new()
+	_status_label.name = "StatusLabel"
+	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_status_label.custom_minimum_size = Vector2(320, 48)
+	_status_label.add_theme_font_size_override("font_size", 15)
+	_status_label.add_theme_color_override("font_color", Color(1.0, 0.72, 0.45))
+	_status_label.visible = false
+	vbox.add_child(_status_label)
+
+func _set_continue_enabled(enabled: bool) -> void:
+	continue_btn.disabled = not enabled
+	if enabled:
+		continue_btn.modulate = Color(1, 1, 1, 1)
+	else:
+		continue_btn.modulate = Color(0.5, 0.5, 0.5, 0.7)
+
+func _show_status(message: String) -> void:
+	if _status_label == null:
+		return
+	_status_label.text = message
+	_status_label.visible = not message.is_empty()
 
 func _add_hard_mode_toggle() -> void:
 	"""Add a 劫难模式 toggle button below the new game button."""
@@ -87,13 +113,16 @@ func _on_hard_mode_toggled(pressed: bool) -> void:
 
 func _on_new_game() -> void:
 	"""Go to spirit root selection screen."""
+	_show_status("")
 	GameManager.goto_scene("res://scenes/ui/SpiritRootSelection.tscn")
 
 func _on_continue() -> void:
 	"""Load saved game and continue."""
+	_show_status("")
 	if GameManager.load_game():
 		GameManager.goto_scene("res://scenes/Main.tscn")
 	else:
+		_show_status(GameManager.get_last_load_error())
 		push_warning("[MainMenu] Failed to load save")
 
 func _on_quit() -> void:

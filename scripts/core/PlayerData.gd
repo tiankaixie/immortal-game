@@ -325,6 +325,12 @@ func to_dict() -> Dictionary:
 		"cultivation_stage": cultivation_stage,
 		"cultivation_xp": cultivation_xp,
 		"cultivation_xp_required": cultivation_xp_required,
+		"base_hp": base_hp,
+		"base_spiritual_power": base_spiritual_power,
+		"base_attack": base_attack,
+		"base_defense": base_defense,
+		"base_speed": base_speed,
+		"base_luck": base_luck,
 		"sp": sp,
 		"sp_max": sp_max,
 		"spirit_stones": spirit_stones,
@@ -336,6 +342,14 @@ func to_dict() -> Dictionary:
 		"skill_slots": skill_slots,
 	}
 
+func _to_string_array(value: Variant) -> Array[String]:
+	var result: Array[String] = []
+	if value is Array:
+		for entry in value:
+			if entry is String:
+				result.append(entry)
+	return result
+
 func from_dict(data: Dictionary) -> void:
 	"""Deserialize player data from dictionary."""
 	player_name = data.get("player_name", "修士")
@@ -344,12 +358,18 @@ func from_dict(data: Dictionary) -> void:
 	cultivation_stage = data.get("cultivation_stage", CultivationStage.EARLY)
 	cultivation_xp = data.get("cultivation_xp", 0.0)
 	cultivation_xp_required = data.get("cultivation_xp_required", 100.0)
+	base_hp = data.get("base_hp", 100.0)
+	base_spiritual_power = data.get("base_spiritual_power", 50.0)
+	base_attack = data.get("base_attack", 10.0)
+	base_defense = data.get("base_defense", 5.0)
+	base_speed = data.get("base_speed", 1.0)
+	base_luck = data.get("base_luck", 1.0)
 	sp = data.get("sp", base_spiritual_power)
 	sp_max = data.get("sp_max", base_spiritual_power)
 	spirit_stones = data.get("spirit_stones", 0)
 	high_grade_stones = data.get("high_grade_stones", 0)
 	equipped_items = data.get("equipped_items", equipped_items)
 	inventory = data.get("inventory", [])
-	unlocked_skills = data.get("unlocked_skills", [])
-	equipped_skills = data.get("equipped_skills", [])
+	unlocked_skills = _to_string_array(data.get("unlocked_skills", []))
+	equipped_skills = _to_string_array(data.get("equipped_skills", []))
 	skill_slots = data.get("skill_slots", 2)
