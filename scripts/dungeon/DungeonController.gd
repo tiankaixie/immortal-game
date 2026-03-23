@@ -80,10 +80,10 @@ enum RoomType {
 }
 
 const ROOM_TYPE_NAMES: Dictionary = {
-	RoomType.NORMAL: "普通间",
-	RoomType.ELITE: "精英间",
-	RoomType.TREASURE: "宝藏间",
-	RoomType.BOSS: "BOSS间",
+	RoomType.NORMAL: "战斗区",
+	RoomType.ELITE: "精英区",
+	RoomType.TREASURE: "宝库",
+	RoomType.BOSS: "首领区",
 }
 
 const ROOM_TYPE_COLORS: Dictionary = {
@@ -199,7 +199,7 @@ func _connect_room_manager() -> void:
 	GameManager.current_room = current_room_number
 	current_room_type = _determine_room_type(current_room_number)
 	room_number_changed.emit(current_room_number, MAX_ROOMS)
-	room_type_changed.emit(current_room_type, ROOM_TYPE_NAMES.get(current_room_type, "普通间"))
+	room_type_changed.emit(current_room_type, ROOM_TYPE_NAMES.get(current_room_type, "战斗区"))
 
 	# Apply hard mode to initial room enemies
 	if GameManager.hard_mode:
@@ -421,7 +421,7 @@ func _swap_room() -> void:
 	# Determine and emit room type
 	current_room_type = _determine_room_type(current_room_number)
 	room_number_changed.emit(current_room_number, MAX_ROOMS)
-	room_type_changed.emit(current_room_type, ROOM_TYPE_NAMES.get(current_room_type, "普通间"))
+	room_type_changed.emit(current_room_type, ROOM_TYPE_NAMES.get(current_room_type, "战斗区"))
 
 	# Setup atmosphere for the new room
 	var atmo_type := "normal"
@@ -440,7 +440,7 @@ func _swap_room() -> void:
 	if current_room_type == RoomType.TREASURE and room_path != TREASURE_VAULT_SCENE_PATH:
 		_spawn_treasure_chest()
 
-	print("[DungeonController] Loaded room %d/%d (%s)" % [current_room_number, MAX_ROOMS, ROOM_TYPE_NAMES.get(current_room_type, "普通间")])
+	print("[DungeonController] Loaded room %d/%d (%s)" % [current_room_number, MAX_ROOMS, ROOM_TYPE_NAMES.get(current_room_type, "战斗区")])
 
 func _on_transition_complete() -> void:
 	is_transitioning = false
@@ -460,7 +460,7 @@ func _show_dungeon_complete() -> void:
 		hard_mode_equipment = GameManager.grant_random_equipment(3.5)
 		if not hard_mode_equipment.is_empty():
 			PlayerData.add_to_inventory(hard_mode_equipment)
-		print("[DungeonController] 劫难模式通关奖励: +%d 灵石 + 稀有装备" % hard_mode_bonus_stones)
+		print("[DungeonController] 梦魇远征通关奖励: +%d 金币 + 稀有装备" % hard_mode_bonus_stones)
 
 	var canvas := CanvasLayer.new()
 	canvas.layer = 20
@@ -485,10 +485,10 @@ func _show_dungeon_complete() -> void:
 	# Title — different for hard mode
 	var title := Label.new()
 	if GameManager.hard_mode:
-		title.text = "⚡ 劫难已渡！副本完成！⚡"
+		title.text = "⚡ 梦魇远征完成！⚡"
 		title.add_theme_color_override("font_color", Color(1.0, 0.6, 0.1))
 	else:
-		title.text = "✦ 副本完成！✦"
+		title.text = "✦ 远征完成！✦"
 		title.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 48)
@@ -499,11 +499,11 @@ func _show_dungeon_complete() -> void:
 	vbox.add_child(spacer)
 
 	var stats := Label.new()
-	var realm_names := ["练气期", "筑基期", "结丹期", "元婴期", "化神期", "炼虚期", "合体期", "大乘期", "渡劫期"]
-	var stage_names := ["初期", "中期", "后期", "巅峰"]
+	var realm_names := ["见习猎手", "资深佣兵", "王国骑士", "狮鹫卫士", "深渊猎手", "黑钢统领", "圣痕冠军", "传奇征讨者", "弑神者"]
+	var stage_names := ["I阶", "II阶", "III阶", "IV阶"]
 	var realm_str: String = realm_names[PlayerData.cultivation_realm] if PlayerData.cultivation_realm < realm_names.size() else str(PlayerData.cultivation_realm)
 	var stage_str: String = stage_names[PlayerData.cultivation_stage] if PlayerData.cultivation_stage < stage_names.size() else str(PlayerData.cultivation_stage)
-	stats.text = "灵石获得: %d\n修为增长: %s · %s" % [
+	stats.text = "金币获得: %d\n阶位成长: %s · %s" % [
 		GameManager.run_spirit_stones,
 		realm_str,
 		stage_str,
@@ -533,14 +533,14 @@ func _show_dungeon_complete() -> void:
 		hard_panel.add_child(hard_vbox)
 
 		var hard_title := Label.new()
-		hard_title.text = "⚡ 劫难通关奖励"
+		hard_title.text = "⚡ 梦魇通关奖励"
 		hard_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		hard_title.add_theme_font_size_override("font_size", 18)
 		hard_title.add_theme_color_override("font_color", Color(1.0, 0.6, 0.1))
 		hard_vbox.add_child(hard_title)
 
 		var hard_stones := Label.new()
-		hard_stones.text = "灵石奖励: +%d 灵石" % hard_mode_bonus_stones
+		hard_stones.text = "金币奖励: +%d 金币" % hard_mode_bonus_stones
 		hard_stones.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		hard_stones.add_theme_font_size_override("font_size", 16)
 		hard_stones.add_theme_color_override("font_color", Color(1.0, 0.9, 0.3))

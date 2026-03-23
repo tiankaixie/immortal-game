@@ -70,7 +70,7 @@ func _display_notification(skill: Dictionary) -> void:
 
 	# Skill name line
 	var title := Label.new()
-	title.text = "✦ 习得技能：%s" % skill.get("name_zh", "???")
+	title.text = "✦ 解锁战技：%s" % skill.get("name_zh", "???")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	title.add_theme_font_size_override("font_size", 20)
 	title.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
@@ -92,7 +92,7 @@ func _display_notification(skill: Dictionary) -> void:
 	var sp_cost: float = skill.get("sp_cost", 0)
 	var elem_name := _get_element_name(element)
 	var info := Label.new()
-	info.text = "灵力消耗 %.0f  |  %s系" % [sp_cost, elem_name]
+	info.text = "魔力消耗 %.0f  |  %s系" % [sp_cost, elem_name]
 	info.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	info.add_theme_font_size_override("font_size", 12)
 	info.add_theme_color_override("font_color", elem_color)
@@ -164,10 +164,11 @@ func _get_element_color(element: String) -> Color:
 
 func _get_element_name(element: String) -> String:
 	match element:
-		"fire": return "火"
-		"water": return "水"
-		"metal": return "金"
-		"wood": return "木"
-		"earth": return "土"
-		"lightning": return "雷"
+		"fire": return "灰烬"
+		"water": return "寒霜"
+		"metal": return "钢铁"
+		"wood": return "荆棘"
+		"earth": return "黑岩"
+		"lightning": return "风暴"
+		"void": return "深渊"
 		_: return "无"

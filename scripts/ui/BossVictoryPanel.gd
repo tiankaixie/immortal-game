@@ -55,14 +55,14 @@ func _build_ui() -> void:
 
 	# ─── Header ──────────────────────────────────────────
 	var header := Label.new()
-	header.text = "✦ BOSS 击败！✦"
+	header.text = "✦ BOSS 讨伐成功！✦"
 	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	header.add_theme_font_size_override("font_size", 48)
 	header.add_theme_color_override("font_color", Color(1.0, 0.75, 0.15))
 	root.add_child(header)
 
 	var sparkle := Label.new()
-	sparkle.text = "— 副本通关奖励 —"
+	sparkle.text = "— 首领讨伐奖励 —"
 	sparkle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	sparkle.add_theme_font_size_override("font_size", 20)
 	sparkle.add_theme_color_override("font_color", Color(0.8, 0.6, 0.3))
@@ -81,7 +81,7 @@ func _build_ui() -> void:
 	loot_panel.add_child(loot_vbox)
 
 	var loot_title := Label.new()
-	loot_title.text = "— 战利品 —"
+	loot_title.text = "— 既得战利品 —"
 	loot_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	loot_title.add_theme_font_size_override("font_size", 18)
 	loot_title.add_theme_color_override("font_color", Color(0.9, 0.8, 0.5))
@@ -89,7 +89,7 @@ func _build_ui() -> void:
 
 	var stones_amount: int = loot_data.get("spirit_stones", 0)
 	var stones_label := Label.new()
-	stones_label.text = "灵石: +%d" % stones_amount
+	stones_label.text = "金币: +%d" % stones_amount
 	stones_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	stones_label.add_theme_font_size_override("font_size", 16)
 	stones_label.add_theme_color_override("font_color", Color(1.0, 0.9, 0.4))
@@ -109,7 +109,7 @@ func _build_ui() -> void:
 
 	# ─── Reward Choice Header ────────────────────────────
 	var choice_header := Label.new()
-	choice_header.text = "选择额外奖励（三选一）"
+	choice_header.text = "选择追加战利品（三选一）"
 	choice_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	choice_header.add_theme_font_size_override("font_size", 24)
 	choice_header.add_theme_color_override("font_color", Color(0.9, 0.85, 1.0))
@@ -155,8 +155,8 @@ func _create_boon_reward_card() -> PanelContainer:
 		Color(0.08, 0.06, 0.2, 0.95),
 		Color(0.4, 0.3, 0.8),
 		"🔮",
-		"天赋祝福",
-		"获得 3 个随机祝福\n（从当前祝福池中抽取）"
+		"战场恩赐",
+		"获得 3 个随机增益\n（从当前恩赐池中抽取）"
 	)
 
 	# Add boon preview names
@@ -184,20 +184,20 @@ func _create_lingshi_reward_card() -> PanelContainer:
 		Color(0.15, 0.12, 0.02, 0.95),
 		Color(0.9, 0.7, 0.2),
 		"💎",
-		"灵石宝藏",
-		"获得 %d 灵石\n（立即入账）" % reward_lingshi,
+		"金币箱",
+		"获得 %d 金币\n（立即入账）" % reward_lingshi,
 		"lingshi"
 	)
 
 # ─── Reward Card: Equipment ──────────────────────────────────
 func _create_equipment_reward_card() -> PanelContainer:
-	var rarity_names := {0: "凡品", 1: "灵品", 2: "宝品", 3: "地品", 4: "天品", 5: "仙品"}
+	var rarity_names := {0: "粗制", 1: "精铸", 2: "稀有", 3: "史诗", 4: "传奇", 5: "神话"}
 	var rarity_val: int = reward_equipment.get("rarity", 0)
 	var rarity_name: String = rarity_names.get(rarity_val, "凡品")
 	var equip_name: String = reward_equipment.get("name", "神秘装备")
 	var slot_name: String = reward_equipment.get("slot", "weapon")
 
-	var slot_names := {"weapon": "武器", "armor": "护甲", "accessory_1": "饰品", "talisman": "符箓"}
+	var slot_names := {"weapon": "武器", "armor": "护甲", "accessory_1": "护符", "talisman": "圣物"}
 	var slot_zh: String = slot_names.get(slot_name, "装备")
 
 	return _create_reward_card_base(

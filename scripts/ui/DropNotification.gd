@@ -17,12 +17,12 @@ const BOTTOM_MARGIN: float = 100.0
 
 # Quality color mapping
 const QUALITY_COLORS: Dictionary = {
-	"凡品": Color(0.7, 0.7, 0.7),        # Gray
-	"灵品": Color(0.3, 0.8, 0.4),        # Green
-	"玄品": Color(0.3, 0.5, 1.0),        # Blue
-	"地品": Color(0.7, 0.3, 1.0),        # Purple
-	"天品": Color(1.0, 0.7, 0.1),        # Gold
-	"仙品": Color(1.0, 0.3, 0.3),        # Red
+	"粗制": Color(0.7, 0.7, 0.7),
+	"精铸": Color(0.3, 0.8, 0.4),
+	"稀有": Color(0.3, 0.5, 1.0),
+	"史诗": Color(0.7, 0.3, 1.0),
+	"传奇": Color(1.0, 0.7, 0.1),
+	"神话": Color(1.0, 0.3, 0.3),
 }
 
 # Active notification labels
@@ -50,10 +50,10 @@ func _on_inventory_changed() -> void:
 			continue
 		if not seen_item_names.has(item_name):
 			seen_item_names[item_name] = true
-			var quality: String = item.get("quality", "凡品")
+			var quality: String = item.get("quality", "粗制")
 			show_drop(item_name, quality)
 
-func show_drop(item_name: String, quality: String = "凡品") -> void:
+func show_drop(item_name: String, quality: String = "粗制") -> void:
 	"""Queue a drop notification. If slots available, show immediately."""
 	var data := {"name": item_name, "quality": quality}
 	if active_notifications.size() < MAX_VISIBLE:
@@ -87,7 +87,7 @@ func _create_notification(data: Dictionary) -> void:
 	label.scroll_active = false
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var color_hex := quality_color.to_html(false)
-	label.text = "获得：[color=#%s][%s] %s[/color]" % [color_hex, quality, item_name]
+	label.text = "入手：[color=#%s][%s] %s[/color]" % [color_hex, quality, item_name]
 	label.add_theme_font_size_override("normal_font_size", 14)
 	panel.add_child(label)
 

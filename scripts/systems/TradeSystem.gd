@@ -80,7 +80,7 @@ func _generate_merchant_item() -> Dictionary:
 			return {
 				"id": "placeholder_%d" % randi(),
 				"type": "equipment",
-				"name": "灵器",
+				"name": "军械",
 				"base_value": 50,
 				"category": "equipment",
 			}
@@ -88,11 +88,11 @@ func _generate_merchant_item() -> Dictionary:
 func _generate_consumable() -> Dictionary:
 	"""Generate a random consumable item (pills, talismans, etc.)."""
 	var consumables := [
-		{ "name": "回气丹", "desc": "Restores 30% HP", "effect": "heal_30", "base_value": 20 },
-		{ "name": "灵力丹", "desc": "Restores 50% Spiritual Power", "effect": "mana_50", "base_value": 25 },
-		{ "name": "破境丹", "desc": "+20% cultivation XP for one run", "effect": "xp_boost_20", "base_value": 100 },
-		{ "name": "金刚符", "desc": "+30% defense for 60s", "effect": "def_buff_30", "base_value": 40 },
-		{ "name": "疾风符", "desc": "+20% speed for 60s", "effect": "speed_buff_20", "base_value": 35 },
+		{ "name": "治疗药剂", "desc": "Restores 30% HP", "effect": "heal_30", "base_value": 20 },
+		{ "name": "魔力药剂", "desc": "Restores 50% Mana", "effect": "mana_50", "base_value": 25 },
+		{ "name": "老兵卷轴", "desc": "+20% rank XP for one run", "effect": "xp_boost_20", "base_value": 100 },
+		{ "name": "铁壁符印", "desc": "+30% defense for 60s", "effect": "def_buff_30", "base_value": 40 },
+		{ "name": "疾风符印", "desc": "+20% speed for 60s", "effect": "speed_buff_20", "base_value": 35 },
 	]
 	var template: Dictionary = consumables[randi() % consumables.size()]
 	
@@ -109,10 +109,10 @@ func _generate_consumable() -> Dictionary:
 func _generate_material() -> Dictionary:
 	"""Generate a random crafting material."""
 	var materials := [
-		{ "name": "灵石矿", "desc": "Raw spirit stone ore", "base_value": 10 },
-		{ "name": "妖兽核", "desc": "Demonic beast core", "base_value": 30 },
-		{ "name": "千年灵草", "desc": "Thousand-year spirit herb", "base_value": 50 },
-		{ "name": "天外陨铁", "desc": "Meteoric iron", "base_value": 80 },
+		{ "name": "碎金币袋", "desc": "Loose battlefield coinage", "base_value": 10 },
+		{ "name": "魔兽核心", "desc": "A pulsing monster core", "base_value": 30 },
+		{ "name": "灰烬药草", "desc": "A rare healing herb", "base_value": 50 },
+		{ "name": "陨黑钢", "desc": "Star-fallen black iron", "base_value": 80 },
 	]
 	var template: Dictionary = materials[randi() % materials.size()]
 	

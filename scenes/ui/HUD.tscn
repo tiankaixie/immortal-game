@@ -46,7 +46,7 @@ theme_override_constants/separation = 6
 
 [node name="RealmLabel" type="Label" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
-text = "练气期 · 初期"
+text = "见习猎手 · I阶"
 theme_override_font_sizes/font_size = 18
 
 [node name="HPBar" type="ProgressBar" parent="MarginContainer/VBoxContainer"]
@@ -65,7 +65,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-text = "气血  100 / 100"
+text = "生命  100 / 100"
 horizontal_alignment = 1
 vertical_alignment = 1
 theme_override_font_sizes/font_size = 14
@@ -86,7 +86,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-text = "灵力  50 / 50"
+text = "魔力  50 / 50"
 horizontal_alignment = 1
 vertical_alignment = 1
 theme_override_font_sizes/font_size = 14
@@ -95,4 +95,4 @@ theme_override_font_sizes/font_size = 14
 layout_mode = 2
 text = "⚔ 自动战斗: 开  [Q]"
 theme_override_font_sizes/font_size = 16
-theme_override_colors/font_color = Color(0.3, 0.9, 0.3, 1)
+theme_override_colors/font_color = Color(0.86, 0.54, 0.42, 1)

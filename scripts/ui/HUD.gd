@@ -3,9 +3,9 @@ extends CanvasLayer
 ##
 ## Shows:
 ## - HP bar (red)
-## - Spiritual Power / 灵力 bar (blue)
+## - MP bar (blue)
 ## - Auto-battle indicator
-## - Cultivation realm & stage text
+## - Hunter rank text
 ## - Skill panel (bottom-center, up to 4 equipped skills)
 
 # ─── Node References ──────────────────────────────────────────
@@ -18,22 +18,22 @@ extends CanvasLayer
 
 # ─── Realm Name Maps ──────────────────────────────────────────
 const REALM_NAMES: Dictionary = {
-	0: "练气期",  # QI_CONDENSATION
-	1: "筑基期",  # FOUNDATION_ESTABLISHMENT
-	2: "结丹期",  # CORE_FORMATION
-	3: "元婴期",  # NASCENT_SOUL
-	4: "化神期",  # SOUL_TRANSFORMATION
-	5: "炼虚期",  # VOID_REFINEMENT
-	6: "合体期",  # BODY_INTEGRATION
-	7: "大乘期",  # MAHAYANA
-	8: "渡劫期",  # TRIBULATION_TRANSCENDENCE
+	0: "见习猎手",
+	1: "资深佣兵",
+	2: "王国骑士",
+	3: "狮鹫卫士",
+	4: "深渊猎手",
+	5: "黑钢统领",
+	6: "圣痕冠军",
+	7: "传奇征讨者",
+	8: "弑神者",
 }
 
 const STAGE_NAMES: Dictionary = {
-	0: "初期",  # EARLY
-	1: "中期",  # MID
-	2: "后期",  # LATE
-	3: "巅峰",  # PEAK
+	0: "I阶",
+	1: "II阶",
+	2: "III阶",
+	3: "IV阶",
 }
 
 # Room display (created dynamically)
@@ -55,7 +55,7 @@ var cooldown_overlays: Array[ColorRect] = []
 var cooldown_labels: Array[Label] = []
 var cooldown_skill_ids: Array[String] = []
 
-# Spirit stones display
+# Gold display
 var stones_label: Label = null
 
 # Inventory UI
@@ -75,7 +75,7 @@ var skill_unlock_notification: CanvasLayer = null
 const SkillUnlockNotificationScene = preload("res://scenes/ui/SkillUnlockNotification.tscn")
 
 # ─── Active Spirit Root Theme Color ──────────────────────────
-var _spirit_theme_color: Color = Color("FF3333")  # Updated in apply_spirit_root_theme()
+var _spirit_theme_color: Color = Color("C45A42")
 
 # ─── Boss HP Bar ──────────────────────────────────────────────
 var boss_bar_container: Control = null
@@ -176,12 +176,12 @@ func connect_to_player(player: Node) -> void:
 func _on_hp_changed(current: float, maximum: float) -> void:
 	hp_bar.max_value = maximum
 	hp_bar.value = current
-	hp_label.text = "气血  %.0f / %.0f" % [current, maximum]
+	hp_label.text = "生命  %.0f / %.0f" % [current, maximum]
 
 func _on_sp_changed(current: float, maximum: float) -> void:
 	sp_bar.max_value = maximum
 	sp_bar.value = current
-	sp_label.text = "灵力  %.0f / %.0f" % [current, maximum]
+	sp_label.text = "魔力  %.0f / %.0f" % [current, maximum]
 
 func _on_auto_battle_toggled(enabled: bool) -> void:
 	_update_auto_battle_display(enabled)
@@ -193,7 +193,7 @@ func _on_cultivation_advanced(_realm: int, _stage: int) -> void:
 func _update_auto_battle_display(enabled: bool) -> void:
 	if auto_battle_label:
 		auto_battle_label.text = "⚔ 自动战斗: %s  [X]" % ("开" if enabled else "关")
-		auto_battle_label.modulate = Color.GREEN if enabled else Color(0.6, 0.6, 0.6)
+		auto_battle_label.modulate = Color(0.88, 0.58, 0.44) if enabled else Color(0.6, 0.6, 0.6)
 
 func _update_realm_display() -> void:
 	if realm_label:
@@ -203,13 +203,13 @@ func _update_realm_display() -> void:
 
 # ─── Spirit Root Theme ─────────────────────────────────────────
 const SPIRIT_ROOT_COLORS: Dictionary = {
-	PlayerData.SpiritualRoot.METAL: Color("C0C0FF"),   # 银蓝
-	PlayerData.SpiritualRoot.WOOD:  Color("44CC44"),   # 翠绿
-	PlayerData.SpiritualRoot.WATER: Color("4488FF"),   # 海蓝
-	PlayerData.SpiritualRoot.FIRE:  Color("FF6633"),   # 烈橙
-	PlayerData.SpiritualRoot.EARTH: Color("AA8844"),   # 土黄
+	PlayerData.SpiritualRoot.METAL: Color("AAB4C0"),
+	PlayerData.SpiritualRoot.WOOD:  Color("648A60"),
+	PlayerData.SpiritualRoot.WATER: Color("5579AD"),
+	PlayerData.SpiritualRoot.FIRE:  Color("C45A42"),
+	PlayerData.SpiritualRoot.EARTH: Color("8C7453"),
 }
-const DEFAULT_HP_COLOR := Color("FF3333")
+const DEFAULT_HP_COLOR := Color("C45A42")
 
 func apply_spirit_root_theme(root: int) -> void:
 	"""Apply element color theme to HP bar, SP bar, skill panel borders,
@@ -360,7 +360,7 @@ func _apply_theme_to_dungeon_progress(theme_color: Color) -> void:
 func show_room_cleared() -> void:
 	"""Display a room cleared notification on the HUD."""
 	var label := Label.new()
-	label.text = "✦ 房间已清除 ✦\n下一间 →"
+	label.text = "✦ 区域肃清 ✦\n继续推进 →"
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.anchors_preset = Control.PRESET_CENTER
@@ -387,7 +387,7 @@ func _create_room_label() -> void:
 	"""Create a room type label and room counter in the top-right corner."""
 	# Room type label (above counter)
 	room_type_label = Label.new()
-	room_type_label.text = "普通间"
+	room_type_label.text = "战斗区"
 	room_type_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	room_type_label.add_theme_font_size_override("font_size", 16)
 	room_type_label.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
@@ -401,7 +401,7 @@ func _create_room_label() -> void:
 
 	# Room counter (below type label)
 	room_label = Label.new()
-	room_label.text = "第 1/5 间"
+	room_label.text = "第 1/5 区"
 	room_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	room_label.add_theme_font_size_override("font_size", 20)
 	room_label.add_theme_color_override("font_color", Color(0.8, 0.7, 1.0))
@@ -416,7 +416,7 @@ func _create_room_label() -> void:
 func update_room_display(room: int, total: int) -> void:
 	"""Update the room counter text."""
 	if room_label:
-		room_label.text = "第 %d/%d 间" % [room, total]
+		room_label.text = "第 %d/%d 区" % [room, total]
 
 func update_room_type_display(room_type_name: String) -> void:
 	"""Update the room type label text and color.
@@ -425,11 +425,11 @@ func update_room_type_display(room_type_name: String) -> void:
 		room_type_label.text = "— %s —" % room_type_name
 		# Color coding: special rooms override theme; normal room uses theme tint
 		match room_type_name:
-			"精英间":
+			"精英区":
 				room_type_label.add_theme_color_override("font_color", Color(1.0, 0.5, 0.2))
-			"宝藏间":
+			"宝库":
 				room_type_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
-			"BOSS间":
+			"首领区":
 				room_type_label.add_theme_color_override("font_color", Color(0.9, 0.2, 0.2))
 			_:
 				# Normal/Ambush rooms: spirit root color, softened
@@ -439,9 +439,9 @@ func update_room_type_display(room_type_name: String) -> void:
 
 # ─── Spirit Stones Display ────────────────────────────────────
 func _create_stones_label() -> void:
-	"""Create a spirit stones counter below the room label."""
+	"""Create a gold counter below the room label."""
 	stones_label = Label.new()
-	stones_label.text = "灵石: %d" % PlayerData.spirit_stones
+	stones_label.text = "金币: %d" % PlayerData.spirit_stones
 	stones_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	stones_label.add_theme_font_size_override("font_size", 18)
 	stones_label.add_theme_color_override("font_color", Color(1.0, 0.9, 0.5))
@@ -455,7 +455,7 @@ func _create_stones_label() -> void:
 
 func _on_spirit_stones_changed(new_total: int) -> void:
 	if stones_label:
-		stones_label.text = "灵石: %d" % new_total
+		stones_label.text = "金币: %d" % new_total
 
 # ─── Drop Notification ────────────────────────────────────────
 func _create_drop_notification() -> void:
@@ -470,10 +470,10 @@ func _create_skill_unlock_notification() -> void:
 
 # ─── Hard Mode Indicator ──────────────────────────────────────
 func _create_hard_mode_indicator() -> void:
-	"""Show a red '劫难' indicator at the top-right of the HUD."""
+	"""Show a red nightmare indicator at the top-right of the HUD."""
 	var label := Label.new()
 	label.name = "HardModeIndicator"
-	label.text = "⚡ 劫难"
+	label.text = "⚡ 梦魇"
 	label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	label.anchor_left = 1.0
 	label.anchor_right = 1.0
@@ -839,7 +839,7 @@ func _on_boss_phase_changed(phase: int) -> void:
 	var phase_text := ""
 	var name_color := Color(1.0, 0.3, 0.2)
 
-	if boss_node and boss_node.get("enemy_name") == "天劫":
+	if boss_node and boss_node.get("enemy_name") == "灾厄化身":
 		# Tribulation Boss phases
 		match phase:
 			2:

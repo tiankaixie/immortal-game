@@ -38,6 +38,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.8, 0)
 pixel_size = 0.01
 font_size = 40
 outline_size = 10
-text = "天劫
+text = "灾厄化身
 700 / 700"
 billboard = 1

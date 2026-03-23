@@ -136,7 +136,7 @@ func _create_loot_item(entry: Dictionary) -> Dictionary:
 			var amount := randi_range(entry["min_amount"], entry["max_amount"])
 			return {
 				"type": LootType.LING_STONE,
-				"name": "灵石 x%d" % amount,
+				"name": "金币 x%d" % amount,
 				"data": { "amount": amount },
 			}
 		
@@ -159,10 +159,10 @@ func _create_loot_item(entry: Dictionary) -> Dictionary:
 
 func _get_pill_name(pill_type: PillType) -> String:
 	match pill_type:
-		PillType.HP_RESTORE: return "回血丹"
-		PillType.SP_RESTORE: return "回灵丹"
-		PillType.HP_SP_BOTH: return "混元丹"
-		_: return "丹药"
+		PillType.HP_RESTORE: return "治疗药剂"
+		PillType.SP_RESTORE: return "魔力药剂"
+		PillType.HP_SP_BOTH: return "复苏合剂"
+		_: return "药剂"
 
 func _generate_equipment(grade: EquipmentGrade) -> Dictionary:
 	"""Generate a random equipment piece with stats based on grade."""
@@ -171,13 +171,13 @@ func _generate_equipment(grade: EquipmentGrade) -> Dictionary:
 	
 	match grade:
 		EquipmentGrade.COMMON:
-			grade_name = "凡品"
+			grade_name = "粗制"
 			stat_multiplier = 1.0
 		EquipmentGrade.FINE:
-			grade_name = "精品"
+			grade_name = "精铸"
 			stat_multiplier = 1.8
 		EquipmentGrade.RARE:
-			grade_name = "上品"
+			grade_name = "稀有"
 			stat_multiplier = 3.0
 	
 	# Random equipment type
@@ -185,11 +185,11 @@ func _generate_equipment(grade: EquipmentGrade) -> Dictionary:
 	var slot: String = slot_options[randi() % slot_options.size()]
 	
 	var equip_names := {
-		"weapon": ["灵剑", "法杖", "飞刃"],
-		"armor": ["法袍", "玄甲", "灵衣"],
-		"accessory_1": ["灵佩", "玉坠"],
-		"accessory_2": ["灵戒", "仙环"],
-		"talisman": ["护身符", "灵符"],
+		"weapon": ["长剑", "战斧", "猎刃"],
+		"armor": ["胸甲", "锁甲", "战衣"],
+		"accessory_1": ["护符", "坠饰"],
+		"accessory_2": ["戒指", "徽记"],
+		"talisman": ["圣物", "纹章"],
 	}
 	
 	var names: Array = equip_names[slot]

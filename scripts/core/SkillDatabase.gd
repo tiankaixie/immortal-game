@@ -14,11 +14,11 @@ func _ready() -> void:
 
 # ─── Skill Definitions ────────────────────────────────────────
 func _register_all_skills() -> void:
-	"""Register all starter techniques."""
+	"""Register all starter combat arts."""
 	
 	_register({
 		"id": "fire_bolt",
-		"name_zh": "火球术",
+		"name_zh": "灰烬矢",
 		"name_en": "Fire Bolt",
 		"sp_cost": 8.0,
 		"cooldown": 1.5,
@@ -26,13 +26,13 @@ func _register_all_skills() -> void:
 		"range": 10.0,
 		"aoe_radius": 0.0,
 		"element": "fire",
-		"description": "凝聚灵力化为火球，直射敌人。入门级火系术法。",
+		"description": "压缩灰烬与火星形成灼热飞矢，精准射穿前方敌人。",
 		"unlock_realm": 0,
 	})
 	
 	_register({
 		"id": "fire_nova",
-		"name_zh": "烈炎爆",
+		"name_zh": "焚火爆环",
 		"name_en": "Fire Nova",
 		"sp_cost": 22.0,
 		"cooldown": 6.0,
@@ -40,13 +40,13 @@ func _register_all_skills() -> void:
 		"range": 5.0,
 		"aoe_radius": 4.0,
 		"element": "fire",
-		"description": "引爆周身烈焰，焚尽近身之敌。结丹期方可修炼。",
+		"description": "在身旁引爆灼热火环，焚烧所有贴身目标。",
 		"unlock_realm": 2,
 	})
 	
 	_register({
 		"id": "frost_slash",
-		"name_zh": "寒冰剑",
+		"name_zh": "霜痕斩",
 		"name_en": "Frost Slash",
 		"sp_cost": 10.0,
 		"cooldown": 2.0,
@@ -54,13 +54,13 @@ func _register_all_skills() -> void:
 		"range": 3.0,
 		"aoe_radius": 0.0,
 		"element": "water",
-		"description": "以灵力凝冰为剑，斩出寒气侵体，减缓敌人身法。",
+		"description": "凝出寒霜刀锋劈开前方，冰冷气流会拖慢敌人的动作。",
 		"unlock_realm": 0,
 	})
 	
 	_register({
 		"id": "water_shield",
-		"name_zh": "水罗盾",
+		"name_zh": "冰潮护幕",
 		"name_en": "Water Shield",
 		"sp_cost": 15.0,
 		"cooldown": 8.0,
@@ -68,13 +68,13 @@ func _register_all_skills() -> void:
 		"range": 0.0,
 		"aoe_radius": 0.0,
 		"element": "water",
-		"description": "以水灵力凝结护盾，短时间内大幅提升防御。筑基期方可修炼。",
+		"description": "召出潮汐般的护幕短暂护体，大幅提升防御。",
 		"unlock_realm": 1,
 	})
 	
 	_register({
 		"id": "metal_edge",
-		"name_zh": "金剑斩",
+		"name_zh": "断钢重斩",
 		"name_en": "Metal Edge",
 		"sp_cost": 12.0,
 		"cooldown": 2.5,
@@ -82,13 +82,13 @@ func _register_all_skills() -> void:
 		"range": 3.0,
 		"aoe_radius": 0.0,
 		"element": "metal",
-		"description": "凝金气于剑锋，一斩之力可裂金石。金系入门重击术。",
+		"description": "将全身力量压到剑锋上猛然劈下，适合正面破甲。",
 		"unlock_realm": 0,
 	})
 	
 	_register({
 		"id": "wood_heal",
-		"name_zh": "木灵愈",
+		"name_zh": "荆棘祷愈",
 		"name_en": "Wood Heal",
 		"sp_cost": 14.0,
 		"cooldown": 10.0,
@@ -96,13 +96,13 @@ func _register_all_skills() -> void:
 		"range": 0.0,
 		"aoe_radius": 0.0,
 		"element": "wood",
-		"description": "引木灵之气修复肉身，恢复自身气血。",
+		"description": "让荆棘之力缠绕伤口，快速恢复自身生命。",
 		"unlock_realm": 0,
 	})
 	
 	_register({
 		"id": "earth_wall",
-		"name_zh": "土盾术",
+		"name_zh": "黑岩壁垒",
 		"name_en": "Earth Wall",
 		"sp_cost": 18.0,
 		"cooldown": 12.0,
@@ -110,13 +110,13 @@ func _register_all_skills() -> void:
 		"range": 0.0,
 		"aoe_radius": 3.5,
 		"element": "earth",
-		"description": "召唤土墙阻挡来敌，范围内敌人减速。筑基期方可修炼。",
+		"description": "唤起厚重岩壁阻挡来敌，并压制范围内敌人的速度。",
 		"unlock_realm": 1,
 	})
 	
 	_register({
 		"id": "lightning_step",
-		"name_zh": "雷步",
+		"name_zh": "雷鸣突袭",
 		"name_en": "Lightning Step",
 		"sp_cost": 28.0,
 		"cooldown": 5.0,
@@ -124,14 +124,14 @@ func _register_all_skills() -> void:
 		"range": 8.0,
 		"aoe_radius": 2.0,
 		"element": "lightning",
-		"description": "化身雷电瞬移至敌身旁，途中电弧伤敌。元婴期以上方可修炼。",
+		"description": "以雷光突进拉近距离，沿途迸射的电弧会灼伤敌人。",
 		"unlock_realm": 3,
 	})
 
 	# ─── 雷灵根专属技能 ───────────────────────────────────────
 	_register({
 		"id": "thunder_palm",
-		"name_zh": "天雷掌",
+		"name_zh": "雷殛重击",
 		"name_en": "Thunder Palm",
 		"sp_cost": 14.0,
 		"cooldown": 4.0,
@@ -141,13 +141,13 @@ func _register_all_skills() -> void:
 		"element": "lightning",
 		"effect": "stun",
 		"effect_duration": 2.0,
-		"description": "雷掌劈出，凝天雷于掌心轰击单敌，强烈电流麻痹敌人2秒。雷灵根入门术。",
+		"description": "将风暴之力砸入单个目标体内，强电流会令其麻痹 2 秒。",
 		"unlock_realm": 0,
 	})
 
 	_register({
 		"id": "chain_lightning",
-		"name_zh": "锁链雷",
+		"name_zh": "风暴连锁",
 		"name_en": "Chain Lightning",
 		"sp_cost": 22.0,
 		"cooldown": 6.5,
@@ -156,14 +156,14 @@ func _register_all_skills() -> void:
 		"aoe_radius": -1.0,  # Special: chain logic (negative = chain mode)
 		"chain_count": 3,    # Number of targets to chain to
 		"element": "lightning",
-		"description": "雷弧在敌群间跳跃传导，最多连锁3个目标，每跳伤害不减。筑基期方可修炼。",
+		"description": "让雷弧在敌群之间跳跃，最多连锁 3 个目标。",
 		"unlock_realm": 1,
 	})
 
 	# ─── 虚灵根专属技能 ───────────────────────────────────────
 	_register({
 		"id": "void_blink",
-		"name_zh": "虚影步",
+		"name_zh": "影袭跃步",
 		"name_en": "Void Blink",
 		"sp_cost": 18.0,
 		"cooldown": 5.0,
@@ -172,13 +172,13 @@ func _register_all_skills() -> void:
 		"aoe_radius": 0.0,
 		"element": "void",
 		"effect": "blink",
-		"description": "撕裂虚空瞬移至目标身后，借空间之力重击敌人，造成高额伤害。虚灵根入门术。",
+		"description": "借深渊裂隙闪到目标背后，打出致命的背袭重击。",
 		"unlock_realm": 0,
 	})
 
 	_register({
 		"id": "void_drain",
-		"name_zh": "虚空吸髓",
+		"name_zh": "噬魂虹吸",
 		"name_en": "Void Drain",
 		"sp_cost": 20.0,
 		"cooldown": 8.0,
@@ -188,7 +188,7 @@ func _register_all_skills() -> void:
 		"element": "void",
 		"effect": "lifesteal",
 		"lifesteal_ratio": 0.6,
-		"description": "以虚空之力抽取目标生命精华，造成伤害的60%转化为自身气血。筑基期方可修炼。",
+		"description": "抽离目标的生命精华，造成伤害的 60% 会返还为自身生命。",
 		"unlock_realm": 1,
 	})
 

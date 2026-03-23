@@ -11,11 +11,11 @@ signal closed()
 # ─── Constants ────────────────────────────────────────────────
 const EQUIP_SLOTS: Array[String] = ["weapon", "armor", "accessory_1", "accessory_2", "talisman"]
 const SLOT_NAMES_ZH: Dictionary = {
-	"weapon": "法器",
-	"armor": "法袍",
-	"accessory_1": "灵佩",
-	"accessory_2": "灵戒",
-	"talisman": "护身符",
+	"weapon": "武器",
+	"armor": "护甲",
+	"accessory_1": "护符",
+	"accessory_2": "戒指",
+	"talisman": "圣物",
 }
 
 const RARITY_COLORS: Dictionary = {
@@ -28,7 +28,7 @@ const RARITY_COLORS: Dictionary = {
 }
 
 const RARITY_NAMES: Dictionary = {
-	0: "凡品", 1: "灵品", 2: "宝品", 3: "地品", 4: "天品", 5: "仙品",
+	0: "粗制", 1: "精铸", 2: "稀有", 3: "史诗", 4: "传奇", 5: "神话",
 }
 
 # ─── Tooltip ─────────────────────────────────────────────────
@@ -86,7 +86,7 @@ func _build_ui() -> void:
 
 	# Title
 	var title := Label.new()
-	title.text = "✦ 储物袋 ✦"
+	title.text = "✦ 战备行囊 ✦"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 26)
 	title.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
@@ -99,7 +99,7 @@ func _build_ui() -> void:
 	outer_vbox.add_child(columns)
 
 	# ── Left column: equipped items ──
-	var left_panel := _create_section_panel("已装备")
+	var left_panel := _create_section_panel("当前装备")
 	columns.add_child(left_panel)
 	var left_scroll := ScrollContainer.new()
 	left_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -112,7 +112,7 @@ func _build_ui() -> void:
 	left_scroll.add_child(equip_vbox)
 
 	# ── Right column: inventory ──
-	var right_panel := _create_section_panel("背包")
+	var right_panel := _create_section_panel("库存")
 	columns.add_child(right_panel)
 	var right_scroll := ScrollContainer.new()
 	right_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -126,7 +126,7 @@ func _build_ui() -> void:
 
 	# Close button
 	var close_btn := Button.new()
-	close_btn.text = "关闭  [Tab]"
+	close_btn.text = "离开  [Tab]"
 	close_btn.custom_minimum_size = Vector2(0, 36)
 	close_btn.add_theme_font_size_override("font_size", 16)
 	close_btn.pressed.connect(_on_close)
@@ -200,7 +200,7 @@ func _refresh_equipment() -> void:
 			row.add_child(unequip_btn)
 		else:
 			var empty_label := Label.new()
-			empty_label.text = "— 空 —"
+			empty_label.text = "— 未装备 —"
 			empty_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			empty_label.add_theme_font_size_override("font_size", 14)
 			empty_label.add_theme_color_override("font_color", Color(0.4, 0.4, 0.4))
@@ -224,7 +224,7 @@ func _refresh_inventory() -> void:
 
 	if PlayerData.inventory.size() == 0:
 		var empty := Label.new()
-		empty.text = "储物袋空空如也"
+		empty.text = "行囊空空如也"
 		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		empty.add_theme_font_size_override("font_size", 15)
 		empty.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))

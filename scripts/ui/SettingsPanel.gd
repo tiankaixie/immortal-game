@@ -1,9 +1,9 @@
 extends CanvasLayer
-## SettingsPanel — 游戏设置面板
+## SettingsPanel — 战场设置面板
 ##
-## Sections: 音频 (Audio), 画面 (Graphics), 游戏 (Gameplay)
+## Sections: 音频、画面、战斗
 ## Saves/loads settings to user://settings.json
-## Dark purple/gold style, consistent with PauseMenu.
+## 黑铁、余烬、旧皮革风格，与 PauseMenu 一致。
 
 const SETTINGS_PATH: String = "user://settings.json"
 
@@ -39,14 +39,14 @@ func _ready() -> void:
 
 func _build_ui() -> void:
 	"""构建设置面板UI。"""
-	# Semi-transparent background
+	# 半透明背景
 	var bg := ColorRect.new()
-	bg.color = Color(0, 0, 0, 0.7)
+	bg.color = Color(0.03, 0.02, 0.02, 0.8)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(bg)
 
-	# Scroll container for settings
+	# 滚动容器
 	var scroll := ScrollContainer.new()
 	scroll.set_anchors_preset(Control.PRESET_CENTER)
 	scroll.anchor_left = 0.5
@@ -61,18 +61,20 @@ func _build_ui() -> void:
 	scroll.grow_vertical = Control.GROW_DIRECTION_BOTH
 	add_child(scroll)
 
-	# Main panel
+	# 主面板
 	var panel := PanelContainer.new()
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	panel.custom_minimum_size = Vector2(500, 540)
 
 	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color(0.08, 0.06, 0.15, 0.95)
-	panel_style.border_color = Color(0.7, 0.55, 0.2)
+	panel_style.bg_color = Color(0.12, 0.09, 0.07, 0.97)
+	panel_style.border_color = Color(0.52, 0.39, 0.25, 0.95)
 	panel_style.set_border_width_all(2)
-	panel_style.set_corner_radius_all(10)
+	panel_style.set_corner_radius_all(8)
 	panel_style.set_content_margin_all(24)
+	panel_style.shadow_color = Color(0.0, 0.0, 0.0, 0.45)
+	panel_style.shadow_size = 18
 	panel.add_theme_stylebox_override("panel", panel_style)
 	scroll.add_child(panel)
 
@@ -80,18 +82,26 @@ func _build_ui() -> void:
 	vbox.add_theme_constant_override("separation", 12)
 	panel.add_child(vbox)
 
-	# Title
+	# 标题
 	var title := Label.new()
-	title.text = "✦ 设置 ✦"
+	title.text = "战 场 设 置"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 30)
-	title.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
+	title.add_theme_color_override("font_color", Color(0.94, 0.84, 0.66))
 	vbox.add_child(title)
+
+	var subtitle := Label.new()
+	subtitle.text = "调整声效、画面与自动战斗偏好，让每次远征都顺手。"
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	subtitle.add_theme_font_size_override("font_size", 14)
+	subtitle.add_theme_color_override("font_color", Color(0.76, 0.69, 0.61))
+	vbox.add_child(subtitle)
 
 	_add_spacer(vbox, 8)
 
-	# ─── 音频 Section ──────────────────────────────────────────
-	_add_section_header(vbox, "♪ 音频")
+	# ─── 音频 ──────────────────────────────────────────
+	_add_section_header(vbox, "余烬音场")
 
 	master_slider = _add_slider_row(vbox, "主音量", settings["master_volume"])
 	master_slider.value_changed.connect(_on_master_volume_changed)
@@ -104,8 +114,8 @@ func _build_ui() -> void:
 
 	_add_separator(vbox)
 
-	# ─── 画面 Section ──────────────────────────────────────────
-	_add_section_header(vbox, "◈ 画面")
+	# ─── 画面 ──────────────────────────────────────────
+	_add_section_header(vbox, "视野与帧率")
 
 	fullscreen_toggle = _add_toggle_row(vbox, "全屏", settings["fullscreen"])
 	fullscreen_toggle.toggled.connect(_on_fullscreen_toggled)
@@ -115,10 +125,10 @@ func _build_ui() -> void:
 
 	_add_separator(vbox)
 
-	# ─── 游戏 Section ──────────────────────────────────────────
-	_add_section_header(vbox, "⚔ 游戏")
+	# ─── 战斗 ──────────────────────────────────────────
+	_add_section_header(vbox, "战斗习惯")
 
-	auto_battle_toggle = _add_toggle_row(vbox, "默认自动战斗", settings["auto_battle_default"])
+	auto_battle_toggle = _add_toggle_row(vbox, "默认自动作战", settings["auto_battle_default"])
 	auto_battle_toggle.toggled.connect(_on_auto_battle_toggled)
 
 	camera_slider = _add_slider_row(vbox, "镜头灵敏度", settings["camera_sensitivity"])
@@ -126,8 +136,8 @@ func _build_ui() -> void:
 
 	_add_spacer(vbox, 16)
 
-	# ─── Back Button ───────────────────────────────────────────
-	var back_btn := _create_button("返回")
+	# ─── 返回按钮 ───────────────────────────────────────────
+	var back_btn := _create_button("返回战术停顿")
 	back_btn.pressed.connect(_on_back_pressed)
 	vbox.add_child(back_btn)
 
@@ -142,7 +152,7 @@ func _add_section_header(parent: VBoxContainer, text: String) -> void:
 	var label := Label.new()
 	label.text = text
 	label.add_theme_font_size_override("font_size", 22)
-	label.add_theme_color_override("font_color", Color(0.9, 0.75, 0.3))
+	label.add_theme_color_override("font_color", Color(0.87, 0.66, 0.38))
 	parent.add_child(label)
 
 func _add_slider_row(parent: VBoxContainer, label_text: String, initial_value: float) -> HSlider:
@@ -152,9 +162,9 @@ func _add_slider_row(parent: VBoxContainer, label_text: String, initial_value: f
 
 	var label := Label.new()
 	label.text = label_text
-	label.custom_minimum_size = Vector2(120, 0)
+	label.custom_minimum_size = Vector2(132, 0)
 	label.add_theme_font_size_override("font_size", 16)
-	label.add_theme_color_override("font_color", Color(0.8, 0.8, 0.9))
+	label.add_theme_color_override("font_color", Color(0.84, 0.8, 0.74))
 	hbox.add_child(label)
 
 	var slider := HSlider.new()
@@ -171,7 +181,7 @@ func _add_slider_row(parent: VBoxContainer, label_text: String, initial_value: f
 	value_label.custom_minimum_size = Vector2(50, 0)
 	value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	value_label.add_theme_font_size_override("font_size", 14)
-	value_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.8))
+	value_label.add_theme_color_override("font_color", Color(0.7, 0.63, 0.56))
 	hbox.add_child(value_label)
 
 	# Update value label on change
@@ -188,9 +198,9 @@ func _add_toggle_row(parent: VBoxContainer, label_text: String, initial_value: b
 
 	var label := Label.new()
 	label.text = label_text
-	label.custom_minimum_size = Vector2(120, 0)
+	label.custom_minimum_size = Vector2(132, 0)
 	label.add_theme_font_size_override("font_size", 16)
-	label.add_theme_color_override("font_color", Color(0.8, 0.8, 0.9))
+	label.add_theme_color_override("font_color", Color(0.84, 0.8, 0.74))
 	hbox.add_child(label)
 
 	var toggle := CheckButton.new()
@@ -201,7 +211,7 @@ func _add_toggle_row(parent: VBoxContainer, label_text: String, initial_value: b
 
 func _add_separator(parent: VBoxContainer) -> void:
 	var sep := HSeparator.new()
-	sep.add_theme_color_override("separator", Color(0.3, 0.25, 0.5, 0.6))
+	sep.add_theme_color_override("separator", Color(0.42, 0.28, 0.18, 0.7))
 	parent.add_child(sep)
 
 func _add_spacer(parent: VBoxContainer, height: float) -> void:
@@ -210,34 +220,37 @@ func _add_spacer(parent: VBoxContainer, height: float) -> void:
 	parent.add_child(spacer)
 
 func _create_button(text: String) -> Button:
-	"""创建统一风格的菜单按钮（与PauseMenu一致）。"""
+	"""创建统一风格的黑铁按钮。"""
 	var btn := Button.new()
 	btn.text = text
-	btn.custom_minimum_size = Vector2(200, 44)
+	btn.custom_minimum_size = Vector2(240, 46)
 	btn.add_theme_font_size_override("font_size", 18)
+	btn.add_theme_color_override("font_color", Color(0.93, 0.88, 0.78))
+	btn.add_theme_color_override("font_hover_color", Color(1.0, 0.94, 0.84))
+	btn.add_theme_color_override("font_pressed_color", Color(0.95, 0.86, 0.7))
 
 	var normal_style := StyleBoxFlat.new()
-	normal_style.bg_color = Color(0.15, 0.12, 0.28, 0.9)
-	normal_style.border_color = Color(0.5, 0.4, 0.2)
+	normal_style.bg_color = Color(0.19, 0.13, 0.1, 0.95)
+	normal_style.border_color = Color(0.46, 0.33, 0.22, 0.95)
 	normal_style.set_border_width_all(1)
 	normal_style.set_corner_radius_all(6)
-	normal_style.set_content_margin_all(8)
+	normal_style.set_content_margin_all(10)
 	btn.add_theme_stylebox_override("normal", normal_style)
 
 	var hover_style := StyleBoxFlat.new()
-	hover_style.bg_color = Color(0.22, 0.18, 0.38, 0.95)
-	hover_style.border_color = Color(0.8, 0.65, 0.3)
+	hover_style.bg_color = Color(0.29, 0.16, 0.11, 0.98)
+	hover_style.border_color = Color(0.75, 0.53, 0.31, 0.98)
 	hover_style.set_border_width_all(2)
 	hover_style.set_corner_radius_all(6)
-	hover_style.set_content_margin_all(8)
+	hover_style.set_content_margin_all(10)
 	btn.add_theme_stylebox_override("hover", hover_style)
 
 	var pressed_style := StyleBoxFlat.new()
-	pressed_style.bg_color = Color(0.1, 0.08, 0.2, 0.95)
-	pressed_style.border_color = Color(0.7, 0.55, 0.2)
+	pressed_style.bg_color = Color(0.12, 0.08, 0.06, 0.98)
+	pressed_style.border_color = Color(0.65, 0.46, 0.28, 0.98)
 	pressed_style.set_border_width_all(1)
 	pressed_style.set_corner_radius_all(6)
-	pressed_style.set_content_margin_all(8)
+	pressed_style.set_content_margin_all(10)
 	btn.add_theme_stylebox_override("pressed", pressed_style)
 
 	return btn

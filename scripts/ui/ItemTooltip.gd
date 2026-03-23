@@ -16,15 +16,15 @@ const RARITY_COLORS: Dictionary = {
 }
 
 const RARITY_NAMES: Dictionary = {
-	0: "凡品", 1: "灵品", 2: "宝品", 3: "地品", 4: "天品", 5: "仙品",
+	0: "粗制", 1: "精铸", 2: "稀有", 3: "史诗", 4: "传奇", 5: "神话",
 }
 
 const SLOT_NAMES_ZH: Dictionary = {
-	"weapon": "法器",
-	"armor": "法袍",
-	"accessory_1": "灵佩",
-	"accessory_2": "灵戒",
-	"talisman": "护身符",
+	"weapon": "武器",
+	"armor": "护甲",
+	"accessory_1": "护符",
+	"accessory_2": "戒指",
+	"talisman": "圣物",
 }
 
 ## Stat display names (Chinese)
@@ -34,7 +34,7 @@ const STAT_NAMES_ZH: Dictionary = {
 	"defense": "防御",
 	"speed": "速度",
 	"luck": "幸运",
-	"spirit_power": "灵力",
+	"spirit_power": "魔力",
 	"crit_rate": "暴击率",
 	"crit_damage": "暴击伤害",
 }
@@ -134,7 +134,7 @@ func show_item(item: Dictionary) -> void:
 	var refinement: int = item.get("refinement_level", 0)
 	if refinement > 0:
 		var ref_label := Label.new()
-		ref_label.text = "精炼 +%d" % refinement
+		ref_label.text = "强化 +%d" % refinement
 		ref_label.add_theme_font_size_override("font_size", 13)
 		ref_label.add_theme_color_override("font_color", Color(1.0, 0.8, 0.3))
 		ref_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -144,7 +144,7 @@ func show_item(item: Dictionary) -> void:
 	var soul_bound: bool = item.get("soul_bound", false)
 	if soul_bound:
 		var sb_label := Label.new()
-		sb_label.text = "已绑定"
+		sb_label.text = "灵魂绑定"
 		sb_label.add_theme_font_size_override("font_size", 12)
 		sb_label.add_theme_color_override("font_color", Color(0.9, 0.4, 0.4))
 		sb_label.mouse_filter = Control.MOUSE_FILTER_IGNORE

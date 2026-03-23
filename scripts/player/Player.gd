@@ -434,7 +434,7 @@ func _on_death() -> void:
 
 	# "道消陨落" death text
 	var death_label := Label.new()
-	death_label.text = "道 消 陨 落"
+	death_label.text = "远 征 失 败"
 	death_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	death_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	death_label.set_anchors_preset(Control.PRESET_CENTER)

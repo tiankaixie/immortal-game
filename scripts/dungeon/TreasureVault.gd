@@ -145,8 +145,8 @@ func _open_chest(chest: Node3D) -> void:
 		var stones := randi_range(SPIRIT_STONE_REWARD_MIN, SPIRIT_STONE_REWARD_MAX)
 		GameManager.run_spirit_stones += stones
 		PlayerData.spirit_stones += stones
-		print("[TreasureVault] Granted %d spirit stones!" % stones)
-		_show_reward_text(chest.global_position, "灵石 +%d" % stones)
+		print("[TreasureVault] Granted %d gold!" % stones)
+		_show_reward_text(chest.global_position, "金币 +%d" % stones)
 	else:
 		# Show boon selection
 		call_deferred("_show_boon_selection")

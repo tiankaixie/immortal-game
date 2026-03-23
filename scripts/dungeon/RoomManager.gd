@@ -68,7 +68,7 @@ func _on_room_cleared() -> void:
 	room_cleared.emit()
 	
 	print("═══════════════════════════════════")
-	print("   ✦ Room Cleared! 房间已清除！ ✦")
+	print("   ✦ Room Cleared! 区域已肃清！ ✦")
 	print("═══════════════════════════════════")
 	
 	# Only show fallback UI if DungeonController is not handling it
@@ -110,7 +110,7 @@ func _create_clear_label() -> void:
 	canvas.add_child(panel)
 	
 	var label := Label.new()
-	label.text = "✦ 房间已清除 ✦\n\n下一间 →"
+	label.text = "✦ 区域已肃清 ✦\n\n继续推进 →"
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", 32)
 	label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))

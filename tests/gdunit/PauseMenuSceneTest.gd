@@ -117,7 +117,7 @@ func test_pause_menu_returns_to_main_menu_and_continue_restores_run() -> void:
 	var pause_menu: Node = get_tree().root.find_child("PauseMenu", true, false)
 	assert_object(pause_menu).is_not_null()
 
-	var main_menu_button: Button = _find_button_by_text(pause_menu, "回到主菜单")
+	var main_menu_button: Button = _find_button_by_text(pause_menu, "返回营地")
 	assert_object(main_menu_button).is_not_null()
 	main_menu_button.emit_signal("pressed")
 
@@ -146,7 +146,7 @@ func test_pause_menu_returns_to_main_menu_and_continue_restores_run() -> void:
 
 	var continued_hud: Node = continued_scene.find_child("HUD", true, false)
 	assert_object(continued_hud).is_not_null()
-	assert_str(continued_hud.room_label.text).is_equal("第 3/5 间")
+	assert_str(continued_hud.room_label.text).is_equal("第 3/5 区")
 	assert_str(continued_hud.dungeon_progress_label.text).is_equal("3 / 5")
 	_assert_stones_label_matches(continued_hud, 77)
 
@@ -219,7 +219,7 @@ func test_pause_menu_roundtrip_remains_stable_across_multiple_continue_cycles() 
 
 		var hud: Node = continued_scene.find_child("HUD", true, false)
 		assert_object(hud).is_not_null()
-		assert_str(hud.room_label.text).is_equal("第 4/5 间")
+		assert_str(hud.room_label.text).is_equal("第 4/5 区")
 		assert_str(hud.dungeon_progress_label.text).is_equal("4 / 5")
 		_assert_stones_label_matches(hud, 41)
 		assert_bool(get_tree().paused).is_false()
@@ -261,7 +261,7 @@ func _pause_to_main_menu(scene: Node) -> Node:
 	var pause_menu: Node = get_tree().root.find_child("PauseMenu", true, false)
 	assert_object(pause_menu).is_not_null()
 
-	var main_menu_button: Button = _find_button_by_text(pause_menu, "回到主菜单")
+	var main_menu_button: Button = _find_button_by_text(pause_menu, "返回营地")
 	assert_object(main_menu_button).is_not_null()
 	main_menu_button.emit_signal("pressed")
 	return await _await_current_scene(MAIN_MENU_PATH)
@@ -278,7 +278,7 @@ func _read_json_file(path: String) -> Dictionary:
 func _assert_stones_label_matches(hud: Node, minimum_value: int) -> void:
 	var current_stones := PlayerData.spirit_stones
 	assert_int(current_stones).is_greater_equal(minimum_value)
-	assert_str(hud.stones_label.text).is_equal("灵石: %d" % current_stones)
+	assert_str(hud.stones_label.text).is_equal("金币: %d" % current_stones)
 
 func _delete_test_file(path: String) -> void:
 	if FileAccess.file_exists(path):

@@ -11,10 +11,10 @@ const UNLOCK_NOTIFICATION_PATH: String = "res://scenes/ui/UnlockNotification.tsc
 
 # Realm name mapping
 const REALM_NAMES: Array[String] = [
-	"练气", "筑基", "结丹", "元婴", "化神", "炼虚", "合体", "大乘", "渡劫"
+	"见习猎手", "资深佣兵", "王国骑士", "狮鹫卫士", "深渊猎手", "黑钢统领", "圣痕冠军", "传奇征讨者", "弑神者"
 ]
 const STAGE_NAMES: Array[String] = [
-	"初期", "中期", "后期", "圆满"
+	"I阶", "II阶", "III阶", "IV阶"
 ]
 
 # Spirit root colors
@@ -28,7 +28,7 @@ const SPIRIT_ROOT_COLORS: Dictionary = {
 	6: Color(0.667, 0.733, 0.8), # VOID — 虚
 }
 
-const SPIRIT_ROOT_NAMES: Array[String] = ["金", "木", "水", "火", "土", "雷", "虚"]
+const SPIRIT_ROOT_NAMES: Array[String] = ["铁誓", "荆棘", "霜潮", "余烬", "黑岩", "风暴", "深渊"]
 
 var _accent_color: Color = Color(0.75, 0.75, 1.0)
 var _run_duration: float = 0.0
@@ -250,14 +250,14 @@ func _build_ui() -> void:
 		floor_num = 1
 
 	var title := Label.new()
-	title.text = "道 消 陨 落"
+	title.text = "远 征 失 败"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 56)
 	title.add_theme_color_override("font_color", Color(0.7, 0.15, 0.15))
 	root.add_child(title)
 
 	var subtitle := Label.new()
-	subtitle.text = "%s 陨落于第 %d 层" % [realm_name, floor_num]
+	subtitle.text = "%s 倒在第 %d 区" % [realm_name, floor_num]
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle.add_theme_font_size_override("font_size", 28)
 	subtitle.add_theme_color_override("font_color", Color(0.75, 0.6, 0.2))
@@ -291,10 +291,10 @@ func _build_ui() -> void:
 	btn_row.add_theme_constant_override("separation", 40)
 	root.add_child(btn_row)
 
-	var restart_btn := _create_styled_button("再度轮回", _on_restart_pressed)
+	var restart_btn := _create_styled_button("再次出征", _on_restart_pressed)
 	btn_row.add_child(restart_btn)
 
-	var menu_btn := _create_styled_button("归返虚无", _on_menu_pressed)
+	var menu_btn := _create_styled_button("返回营地", _on_menu_pressed)
 	btn_row.add_child(menu_btn)
 
 	# ─── Fade-in animation ───
@@ -332,7 +332,7 @@ func _create_stats_panel() -> PanelContainer:
 
 	# Panel title
 	var panel_title := Label.new()
-	panel_title.text = "── 此劫历程 ──"
+	panel_title.text = "── 本次远征 ──"
 	panel_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	panel_title.add_theme_font_size_override("font_size", 24)
 	panel_title.add_theme_color_override("font_color", _accent_color)
@@ -347,22 +347,22 @@ func _create_stats_panel() -> PanelContainer:
 
 	# Stats rows — check for new records
 	var realm_name := _get_realm_display()
-	_add_stat_row(vbox, "修为境界", realm_name)
-	_add_stat_row(vbox, "坚持层数", "%d 间" % RunStats.rooms_cleared,
+	_add_stat_row(vbox, "猎人阶位", realm_name)
+	_add_stat_row(vbox, "推进区域", "%d 区" % RunStats.rooms_cleared,
 		_check_new_record("rooms_cleared", RunStats.rooms_cleared))
-	_add_stat_row(vbox, "击杀敌人", "%d 个妖物" % RunStats.enemies_killed,
+	_add_stat_row(vbox, "击杀敌人", "%d 个" % RunStats.enemies_killed,
 		_check_new_record("kills", RunStats.enemies_killed))
-	_add_stat_row(vbox, "灵石收集", "%d 灵石" % RunStats.spirit_stones_collected,
+	_add_stat_row(vbox, "金币收集", "%d 金币" % RunStats.spirit_stones_collected,
 		_check_new_record("spirit_stones", RunStats.spirit_stones_collected))
 	_add_stat_row(vbox, "使用技能", "%d 次" % RunStats.skills_used)
-	_add_stat_row(vbox, "获得祝福", "%d 个" % RunStats.boons_acquired)
+	_add_stat_row(vbox, "夺取恩赐", "%d 次" % RunStats.boons_acquired)
 	_add_stat_row(vbox, "总伤害量", "%d 点" % RunStats.damage_dealt_total,
 		_check_new_record("damage_dealt", RunStats.damage_dealt_total))
 
 	# Duration
 	var minutes := int(_run_duration) / 60
 	var seconds := int(_run_duration) % 60
-	_add_stat_row(vbox, "历劫时长", "%d 分 %02d 秒" % [minutes, seconds])
+	_add_stat_row(vbox, "存活时长", "%d 分 %02d 秒" % [minutes, seconds])
 
 	return panel
 
@@ -414,7 +414,7 @@ func _create_history_panel() -> PanelContainer:
 
 	# Section title
 	var section_title := Label.new()
-	section_title.text = "── 历代轮回 ──"
+	section_title.text = "── 往昔战报 ──"
 	section_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	section_title.add_theme_font_size_override("font_size", 20)
 	section_title.add_theme_color_override("font_color", Color(0.75, 0.6, 0.2))
@@ -454,7 +454,7 @@ func _format_run_summary(run: Dictionary, rank: int) -> String:
 	var dur_min := dur / 60
 	var dur_sec := dur % 60
 
-	return "#%d  %s灵根 · %s · %d层 · %d杀 · %d分%02d秒" % [
+	return "#%d  %s战印 · %s · %d区 · %d杀 · %d分%02d秒" % [
 		rank, root_name, realm_str, rooms, kills, dur_min, dur_sec
 	]
 
@@ -528,7 +528,7 @@ func _create_styled_button(text: String, callback: Callable) -> Button:
 	return btn
 
 func _get_realm_display() -> String:
-	"""Get readable realm + stage string like '练气初期'."""
+	"""Get readable rank + stage string."""
 	var realm_idx: int = clampi(PlayerData.cultivation_realm, 0, REALM_NAMES.size() - 1)
 	var stage_idx: int = clampi(PlayerData.cultivation_stage, 0, STAGE_NAMES.size() - 1)
 	return REALM_NAMES[realm_idx] + STAGE_NAMES[stage_idx]

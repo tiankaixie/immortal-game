@@ -240,12 +240,12 @@ func _generate_item_name(slot: String, rarity: Rarity) -> String:
 	TODO: Pull from a name database with proper xianxia naming conventions.
 	For now, use placeholder format.
 	"""
-	var rarity_prefix: Array[String] = ["凡", "灵", "宝", "地级", "天级", "仙"]
+	var rarity_prefix: Array[String] = ["粗制", "精铸", "稀有", "史诗", "传奇", "神话"]
 	var slot_names: Dictionary = {
-		"weapon": "剑",
-		"armor": "袍",
-		"accessory_1": "佩",
-		"accessory_2": "戒",
-		"talisman": "符",
+		"weapon": "之刃",
+		"armor": "护甲",
+		"accessory_1": "护符",
+		"accessory_2": "戒指",
+		"talisman": "圣物",
 	}
-	return "%s%s" % [rarity_prefix[rarity], slot_names.get(slot, "器")]
+	return "%s%s" % [rarity_prefix[rarity], slot_names.get(slot, "装备")]

@@ -148,7 +148,7 @@ func test_player_death_routes_to_death_screen_and_main_menu() -> void:
 	assert_bool(saved_game["run_state"]["is_run_active"]).is_false()
 	assert_int(int(saved_game["game_state"])).is_equal(GameManager.GameState.SECT_HUB)
 
-	var menu_button := _find_button_by_text(death_screen, "归返虚无")
+	var menu_button := _find_button_by_text(death_screen, "返回营地")
 	assert_object(menu_button).is_not_null()
 	menu_button.emit_signal("pressed")
 

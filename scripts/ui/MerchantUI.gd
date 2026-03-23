@@ -2,8 +2,8 @@ extends CanvasLayer
 ## MerchantUI — Shop overlay for the dungeon merchant
 ##
 ## Displays merchant stock as a list of buyable items.
-## Player clicks "购买" to buy; spirit stones are deducted via PlayerData.
-## Press Escape or click "关闭" to close.
+## Player clicks "购入" to buy; gold is deducted via PlayerData.
+## Press Escape or click "离开" to close.
 
 # ─── Signals ──────────────────────────────────────────────────
 signal closed()
@@ -66,15 +66,15 @@ func _build_ui() -> void:
 
 	# Title
 	var title := Label.new()
-	title.text = "✦ 灵宝阁 · 行商 ✦"
+	title.text = "✦ 黑港行商 ✦"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 26)
 	title.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
 	outer_vbox.add_child(title)
 
-	# Spirit stones display
+	# Gold display
 	stones_label = Label.new()
-	stones_label.text = "灵石: %d" % PlayerData.spirit_stones
+	stones_label.text = "金币: %d" % PlayerData.spirit_stones
 	stones_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	stones_label.add_theme_font_size_override("font_size", 16)
 	stones_label.add_theme_color_override("font_color", Color(1.0, 0.9, 0.5))
@@ -100,7 +100,7 @@ func _build_ui() -> void:
 
 	# Close button
 	var close_btn := Button.new()
-	close_btn.text = "关闭  [Esc]"
+	close_btn.text = "离开  [Esc]"
 	close_btn.custom_minimum_size = Vector2(0, 36)
 	close_btn.add_theme_font_size_override("font_size", 16)
 	close_btn.pressed.connect(_on_close)
@@ -121,7 +121,7 @@ func _populate_items() -> void:
 
 	if stock.size() == 0:
 		var empty_label := Label.new()
-		empty_label.text = "商人已无货物"
+		empty_label.text = "行商已售罄"
 		empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		empty_label.add_theme_font_size_override("font_size", 16)
 		empty_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
@@ -161,7 +161,7 @@ func _create_item_row(item: Dictionary, index: int) -> HBoxContainer:
 	# Price
 	var price: int = item.get("price", 0)
 	var price_label := Label.new()
-	price_label.text = "%d 灵石" % price
+	price_label.text = "%d 金币" % price
 	price_label.custom_minimum_size = Vector2(80, 0)
 	price_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	price_label.add_theme_font_size_override("font_size", 14)
@@ -172,7 +172,7 @@ func _create_item_row(item: Dictionary, index: int) -> HBoxContainer:
 
 	# Buy button
 	var buy_btn := Button.new()
-	buy_btn.text = "购买"
+	buy_btn.text = "购入"
 	buy_btn.custom_minimum_size = Vector2(60, 30)
 	buy_btn.add_theme_font_size_override("font_size", 14)
 	buy_btn.disabled = not can_afford
@@ -216,7 +216,7 @@ func _on_buy_pressed(index: int) -> void:
 	var price: int = item.get("price", 0)
 
 	if not PlayerData.spend_spirit_stones(price):
-		print("[MerchantUI] Not enough spirit stones")
+		print("[MerchantUI] Not enough gold")
 		return
 
 	# Add to player inventory
@@ -231,12 +231,12 @@ func _on_buy_pressed(index: int) -> void:
 	_refresh_after_purchase()
 
 	AudioManager.play_sfx("purchase")
-	print("[MerchantUI] Purchased: %s for %d stones" % [item.get("name", "?"), price])
+	print("[MerchantUI] Purchased: %s for %d gold" % [item.get("name", "?"), price])
 
 func _refresh_after_purchase() -> void:
 	"""Rebuild item list and update stones display."""
 	if stones_label:
-		stones_label.text = "灵石: %d" % PlayerData.spirit_stones
+		stones_label.text = "金币: %d" % PlayerData.spirit_stones
 
 	# Clear and repopulate
 	for child in content_vbox.get_children():

@@ -51,14 +51,14 @@ func _build_ui() -> void:
 
 	# Title
 	var title := Label.new()
-	title.text = "✦ 天道赐福 ✦"
+	title.text = "✦ 战场恩赐 ✦"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 40)
 	title.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
 	root.add_child(title)
 
 	var subtitle := Label.new()
-	subtitle.text = "选择一项祝福"
+	subtitle.text = "选择一项本轮增益"
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle.add_theme_font_size_override("font_size", 20)
 	subtitle.add_theme_color_override("font_color", Color(0.7, 0.7, 0.9))
@@ -96,14 +96,14 @@ func _create_boon_card(boon: Dictionary, index: int) -> PanelContainer:
 	var base_border: Color
 	match rarity:
 		0:  # Common — dark blue
-			base_bg = Color(0.08, 0.08, 0.18, 0.95)
-			base_border = Color(0.3, 0.3, 0.6)
+			base_bg = Color(0.10, 0.08, 0.08, 0.95)
+			base_border = Color(0.40, 0.32, 0.30)
 		1:  # Rare — purple
-			base_bg = Color(0.12, 0.05, 0.2, 0.95)
-			base_border = Color(0.6, 0.3, 0.8)
+			base_bg = Color(0.13, 0.07, 0.09, 0.95)
+			base_border = Color(0.62, 0.39, 0.31)
 		2:  # Legendary — gold
-			base_bg = Color(0.15, 0.1, 0.02, 0.95)
-			base_border = Color(0.9, 0.7, 0.2)
+			base_bg = Color(0.18, 0.11, 0.05, 0.95)
+			base_border = Color(0.89, 0.70, 0.28)
 		_:
 			base_bg = Color(0.08, 0.08, 0.18, 0.95)
 			base_border = Color(0.3, 0.3, 0.6)
@@ -170,8 +170,8 @@ func _create_boon_card(boon: Dictionary, index: int) -> PanelContainer:
 	vbox.add_child(desc_label)
 
 	# Rarity label
-	var rarity_names := ["凡品", "灵品", "仙品"]
-	var rarity_colors := [Color(0.5, 0.5, 0.6), Color(0.6, 0.3, 0.8), Color(0.9, 0.7, 0.2)]
+	var rarity_names := ["普通", "稀有", "传奇"]
+	var rarity_colors := [Color(0.58, 0.55, 0.54), Color(0.82, 0.47, 0.36), Color(0.92, 0.72, 0.28)]
 	var rarity_label := Label.new()
 	rarity_label.text = rarity_names[clampi(rarity, 0, 2)]
 	rarity_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -181,7 +181,7 @@ func _create_boon_card(boon: Dictionary, index: int) -> PanelContainer:
 
 	# Select button
 	var btn := Button.new()
-	btn.text = "选择"
+	btn.text = "夺取"
 	btn.custom_minimum_size = Vector2(120, 40)
 	btn.add_theme_font_size_override("font_size", 20)
 	btn.pressed.connect(_on_boon_selected.bind(boon["id"]))

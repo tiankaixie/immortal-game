@@ -1,26 +1,26 @@
-# 仙途 (Xiān Tú) — Path of Immortality
+# 灰烬远征 (Ashenfall)
 
-A xianxia-themed roguelite dungeon crawler prototype built with Godot 4 and GDScript.
+A dark fantasy roguelite dungeon crawler prototype built with Godot 4 and GDScript.
 
 ## Overview
 
-Descend into ancient celestial ruins as a cultivator seeking immortality. Fight demons, collect spiritual treasures, unlock techniques, and advance through cultivation realms. The current repository is a playable Godot game prototype with a dungeon run, combat loop, progression systems, and UI already wired together.
+Descend into ruined keeps and abyss-touched vaults as a frontline hunter. Fight warped monsters, collect battlefield relics, unlock combat arts, and push through a rank-based progression ladder. The current repository is a playable Godot game prototype with a dungeon run, combat loop, progression systems, and UI already wired together.
 
 **Genre:** Roguelite Dungeon Crawler  
-**Theme:** Xianxia (Chinese Cultivation / Immortal Fantasy)  
+**Theme:** Dark Fantasy Action RPG  
 **Engine:** Godot 4.6 (Forward Plus)  
 **Language:** GDScript  
-**Presentation:** 3D gameplay with stylized xianxia UI and VFX
+**Presentation:** 3D gameplay with grim, high-contrast fantasy UI and VFX
 
 ## Current State
 
 Implemented or partially implemented systems in the current codebase:
 
 - **Combat loop** — auto-battle with manual override, skill usage, cooldowns, crits, dodge, floating damage numbers, and combat VFX
-- **Dungeon flow** — multi-room runs with room progression, boss rooms, treasure rooms, ambush rooms, boon selection, and HUD updates
-- **Player progression** — cultivation realms/stages, spiritual roots, stat scaling, starter skills, SP regeneration, unlocks, and run stats
-- **Loot and economy** — equipment generation, loot tables, spirit stone currency, merchant stock generation, buy/sell flow, and contract scaffolding
-- **UI layer** — HUD, inventory, tooltips, pause menu, death screen, boss victory panel, settings, unlock notifications, and spirit root selection
+- **Dungeon flow** — multi-room runs with room progression, boss rooms, treasure rooms, ambush rooms, battlefield blessing choices, and HUD updates
+- **Player progression** — rank tiers, combat sigils, stat scaling, starter skills, SP regeneration, unlocks, and run stats
+- **Loot and economy** — equipment generation, loot tables, gold currency, merchant stock generation, buy/sell flow, and contract scaffolding
+- **UI layer** — HUD, inventory, tooltips, pause menu, death screen, boss victory panel, settings, unlock notifications, and sigil selection
 - **Persistence** — versioned save/load through `user://savegame.json`, including run-state restore for continue flow and menu-level corrupt-save messaging
 
 Some systems are still scaffolded with placeholder content or TODOs, especially around deeper economy content, balancing, and full meta-progression.
@@ -69,7 +69,7 @@ godot --path /Users/tiankaixie/Local/game
     ├── enemies/          # Enemy behaviors and variants
     ├── npc/              # Merchant interactions
     ├── player/           # Character controller and input
-    ├── systems/          # Equipment, loot, boons, buffs, trading
+    ├── systems/          # Equipment, loot, battlefield blessings, buffs, trading
     ├── ui/               # UI controllers
     └── vfx/              # Runtime VFX scripts
 ```

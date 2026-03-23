@@ -1,39 +1,34 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#120f24"/>
-      <stop offset="55%" stop-color="#2a1f49"/>
-      <stop offset="100%" stop-color="#4b1f1f"/>
+      <stop offset="0%" stop-color="#100d0c"/>
+      <stop offset="48%" stop-color="#221716"/>
+      <stop offset="100%" stop-color="#40211b"/>
     </linearGradient>
-    <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#f7e7a3"/>
-      <stop offset="100%" stop-color="#c88c3a"/>
+    <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f1eadc"/>
+      <stop offset="100%" stop-color="#98908a"/>
     </linearGradient>
-    <linearGradient id="blade" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#f7f8ff"/>
-      <stop offset="100%" stop-color="#c8d0f0"/>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f0d2a4"/>
+      <stop offset="100%" stop-color="#9d6933"/>
     </linearGradient>
-    <radialGradient id="glow" cx="50%" cy="45%" r="55%">
-      <stop offset="0%" stop-color="#ffe7a0" stop-opacity="0.95"/>
-      <stop offset="70%" stop-color="#ffd36a" stop-opacity="0.18"/>
-      <stop offset="100%" stop-color="#ffd36a" stop-opacity="0"/>
+    <radialGradient id="ember" cx="50%" cy="42%" r="58%">
+      <stop offset="0%" stop-color="#ffb46a" stop-opacity="0.95"/>
+      <stop offset="55%" stop-color="#d86130" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#d86130" stop-opacity="0"/>
     </radialGradient>
   </defs>
 
-  <rect width="256" height="256" rx="56" fill="url(#bg)"/>
-  <circle cx="128" cy="104" r="58" fill="url(#glow)"/>
-  <circle cx="128" cy="128" r="92" fill="none" stroke="url(#ring)" stroke-width="10"/>
-  <circle cx="128" cy="128" r="78" fill="none" stroke="#f5d88a" stroke-opacity="0.35" stroke-width="2"/>
-
-  <path d="M55 184c18-24 33-38 46-46 10 10 18 23 27 46H55Z" fill="#1a172b"/>
-  <path d="M101 184c18-38 34-63 50-82 16 20 31 44 50 82H101Z" fill="#211d35"/>
-  <path d="M80 184c11-16 21-26 31-34 7 8 12 18 19 34H80Z" fill="#3d5f58" fill-opacity="0.65"/>
-  <path d="M128 70 143 91 134 161 122 161 113 91Z" fill="url(#blade)"/>
-  <path d="M117 88h22l-11-16Z" fill="#fff4cf"/>
-  <path d="M110 160h36v10h-36Z" fill="#d29a42"/>
-  <path d="M99 170h58l-13 12h-32Z" fill="#7a3c28"/>
-  <circle cx="128" cy="112" r="5" fill="#fff3c9"/>
-
-  <path d="M176 74c9 7 16 16 20 28" fill="none" stroke="#f8dea0" stroke-width="5" stroke-linecap="round" stroke-opacity="0.7"/>
-  <path d="M63 98c6-12 14-22 25-29" fill="none" stroke="#f8dea0" stroke-width="4" stroke-linecap="round" stroke-opacity="0.45"/>
+  <rect width="256" height="256" rx="52" fill="url(#bg)"/>
+  <circle cx="128" cy="104" r="72" fill="url(#ember)"/>
+  <path d="M128 34 188 84 168 183 128 220 88 183 68 84Z" fill="none" stroke="url(#gold)" stroke-width="10"/>
+  <path d="M128 56 165 87 151 170 128 189 105 170 91 87Z" fill="#140f11" stroke="#6d3d28" stroke-width="3"/>
+  <path d="M128 68 143 92 136 156 120 156 113 92Z" fill="url(#metal)"/>
+  <path d="M112 154h32v9h-32Z" fill="#be8645"/>
+  <path d="M102 163h52l-11 11h-30Z" fill="#5d3024"/>
+  <path d="M119 92h18l-9-15Z" fill="#fff5db"/>
+  <path d="M80 98c8-10 17-18 29-24" fill="none" stroke="#f5d7ad" stroke-width="5" stroke-linecap="round" stroke-opacity="0.55"/>
+  <path d="M176 100c-7-10-16-18-28-24" fill="none" stroke="#f5d7ad" stroke-width="5" stroke-linecap="round" stroke-opacity="0.55"/>
+  <path d="M87 192h82" fill="none" stroke="#7a4d33" stroke-width="6" stroke-linecap="round" stroke-opacity="0.8"/>
 </svg>

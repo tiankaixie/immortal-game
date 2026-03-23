@@ -1,11 +1,11 @@
 extends "res://scripts/enemies/Enemy.gd"
-## TribulationBoss — 天劫 (Heavenly Tribulation Boss)
+## TribulationBoss — 灾厄化身 (Cataclysm Avatar Boss)
 ##
 ## High-difficulty lightning-themed boss with 3 phases:
 ## Phase 1 (HP > 50%): Melee + Lightning Strike AoE (4m radius, 1.8x dmg, 4s CD)
 ## Phase 2 (HP 20-50%): Speed increase + Heavenly Thunder Chain (2.2x dmg, 8s CD) + gold/white visual
 ## Phase 3 (HP ≤ 20%): Tribulation Storm — 5 sequential lightning bolts (0.3s delay, 1.5x each)
-## Drops 50-80 spirit stones + guaranteed rare equipment on death.
+## Drops 50-80 gold + guaranteed rare equipment on death.
 
 # ─── Boss-Specific Constants ──────────────────────────────────
 @export var lightning_strike_range: float = 8.0
@@ -61,7 +61,7 @@ func _ready() -> void:
 	chase_range = 20.0
 	attack_range = 2.5
 	attack_cooldown = 1.6
-	enemy_name = "天劫"
+	enemy_name = "灾厄化身"
 
 	current_hp = max_hp
 	_update_hp_label()

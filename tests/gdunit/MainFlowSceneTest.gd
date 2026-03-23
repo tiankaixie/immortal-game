@@ -185,10 +185,10 @@ func test_continue_loads_saved_player_data_and_enters_main_scene() -> void:
 
 	var hud := main_scene.find_child("HUD", true, false)
 	assert_object(hud).is_not_null()
-	assert_str(hud.room_label.text).is_equal("第 2/5 间")
+	assert_str(hud.room_label.text).is_equal("第 2/5 区")
 	assert_str(hud.dungeon_progress_label.text).is_equal("2 / 5")
-	assert_str(hud.room_type_label.text).is_equal("— 宝藏间 —")
-	assert_str(hud.stones_label.text).is_equal("灵石: 123")
+	assert_str(hud.room_type_label.text).is_equal("— 宝库 —")
+	assert_str(hud.stones_label.text).is_equal("金币: 123")
 
 func test_continue_migrates_legacy_save_without_run_metadata() -> void:
 	_write_test_save({
@@ -257,8 +257,8 @@ func test_continue_migrates_legacy_save_without_run_metadata() -> void:
 
 	var hud := main_scene.find_child("HUD", true, false)
 	assert_object(hud).is_not_null()
-	assert_str(hud.room_label.text).is_equal("第 2/5 间")
-	assert_str(hud.stones_label.text).is_equal("灵石: 66")
+	assert_str(hud.room_label.text).is_equal("第 2/5 区")
+	assert_str(hud.stones_label.text).is_equal("金币: 66")
 
 func test_continue_with_corrupted_save_stays_on_menu_and_shows_error() -> void:
 	var file := FileAccess.open(TEST_SAVE_PATH, FileAccess.WRITE)
